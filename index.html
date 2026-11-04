@@ -1,0 +1,1748 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Schätzmeister</title>
+<meta name="description" content="Schätzfragen-Spiel: Je näher du an der richtigen Antwort liegst, desto mehr Punkte. Funktioniert offline.">
+<meta name="theme-color" content="#1f2a44">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bg:#f4f1ea; --card:#fffdf8; --ink:#1f2a44; --muted:#6b7280; --line:#e4ddd0;
+  --accent:#e2683c; --accent-ink:#fff; --good:#2f9e6b; --mid:#d9a21b; --bad:#c2453a;
+  --shadow:0 2px 0 rgba(31,42,68,.08), 0 8px 24px rgba(31,42,68,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#111726; --card:#1a2236; --ink:#eef0f6; --muted:#9aa3b5; --line:#2a3450;
+    --accent:#f07a4d; --shadow:0 2px 0 rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); }
+}
+:root[data-theme="dark"]{ --bg:#111726; --card:#1a2236; --ink:#eef0f6; --muted:#9aa3b5; --line:#2a3450;
+  --accent:#f07a4d; --shadow:0 2px 0 rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+main{width:100%;max-width:560px;min-width:0}
+.card{min-width:0;overflow-wrap:break-word}
+header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 20px}
+.logo{font-weight:800;font-size:1.25rem;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;cursor:pointer}
+.logo b{color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 18px;box-shadow:var(--shadow)}
+h1{font-size:1.9rem;line-height:1.15;letter-spacing:-.03em;margin:0 0 8px}
+h2{font-size:1.3rem;line-height:1.3;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 10px}
+p.lead{color:var(--muted);margin:0 0 20px}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:13px 18px;font-weight:650}
+.btn{background:var(--accent);color:var(--accent-ink);width:100%}
+.btn:active,.btn2:active{transform:translateY(1px)}
+.btn2{background:transparent;color:var(--ink);border:1.5px solid var(--line);width:100%}
+.btn2 .sub,.btn .sub{display:block;font-size:.78rem;font-weight:500;opacity:.75}
+.stack{display:grid;gap:10px}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;margin-bottom:14px}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:6px}
+.progress{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:18px}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.inputwrap{display:flex;align-items:stretch;border:2px solid var(--line);border-radius:14px;overflow:hidden;margin-top:18px;background:var(--bg)}
+.inputwrap:focus-within{border-color:var(--accent)}
+.inputwrap input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:1.3rem;padding:12px 14px;outline:none}
+.inputwrap span{display:flex;align-items:center;padding:0 14px;color:var(--muted);font-weight:600;border-left:1px solid var(--line);white-space:nowrap}
+.preview{min-height:1.5em;color:var(--muted);font-size:.9rem;margin:8px 2px 12px}
+.preview.err{color:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{padding:6px 10px;font-size:.85rem;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;font-weight:600}
+.linkbtn{background:none;border:0;padding:10px 0 0;color:var(--muted);font-weight:600;width:100%;text-align:center;font-size:.9rem}
+.result{text-align:center;padding:6px 0 4px}
+.points{font-size:3.2rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.verdict{font-weight:700;margin:6px 0 4px}
+.lifelost{color:var(--bad);font-weight:700;font-size:.9rem;margin-bottom:12px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.cmp div{border:1px solid var(--line);border-radius:12px;padding:10px}
+.cmp small{display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+.cmp strong{font-size:1.05rem}
+.note{color:var(--muted);font-size:.9rem;margin:0 0 16px}
+.scale{position:relative;height:34px;margin:16px 4px 18px}
+.scale .bar{position:absolute;top:15px;left:0;right:0;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--bad),var(--mid),var(--good),var(--mid),var(--bad))}
+.scale .dot{position:absolute;top:8px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:3px solid var(--card)}
+.scale .t{background:var(--ink)} .scale .g{background:var(--accent)}
+.scale .lbl{position:absolute;top:24px;font-size:.7rem;color:var(--muted);transform:translateX(-50%)}
+.list{list-style:none;padding:0;margin:0 0 18px;display:grid;gap:8px}
+.list li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:8px 0;font-size:.92rem}
+.list li span:first-child{color:var(--muted)}
+.list b{white-space:nowrap}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 4px;cursor:pointer}
+.tiles div{text-align:center;border:1px solid var(--line);border-radius:12px;padding:10px 4px}
+.tiles strong{display:block;font-size:1.3rem}
+.tiles small{color:var(--muted);font-size:.75rem}
+select{font:inherit;width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+.catbox{border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+.catbox summary{padding:12px;cursor:pointer;font-size:1rem;list-style:none;display:flex;justify-content:space-between;gap:8px}
+.catbox summary::-webkit-details-marker{display:none}
+.catbox summary::after{content:'▾';color:var(--muted)}
+.catbox[open] summary::after{content:'▴'}
+.catact{display:flex;gap:8px;padding:0 12px 8px}
+.catact button{padding:6px 10px;font-size:.8rem;border:1.5px solid var(--line);background:none;color:var(--ink);border-radius:9px}
+.catlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 8px;padding:0 12px 12px}
+.catlist label{display:flex;align-items:center;gap:8px;padding:5px 2px;font-size:.92rem;min-width:0}
+.catlist input{width:20px;height:20px;flex:none;accent-color:var(--accent)}
+details{margin-top:18px;color:var(--muted);font-size:.9rem}
+summary{cursor:pointer;font-weight:600}
+.radar{width:100%;height:auto;display:block;margin:4px 0 8px}
+.radar .ring{fill:none;stroke:var(--line);stroke-width:1}
+.radar .ring.outer{stroke-width:1.5}
+.radar .spoke{stroke:var(--line);stroke-width:1}
+.radar .area{fill:var(--accent);fill-opacity:.22;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+.radar .pt{fill:var(--accent);stroke:var(--card);stroke-width:2}
+.radar .lbl{fill:var(--ink);font-size:19px;font-weight:650}
+.radar .val{fill:var(--muted);font-size:17px;font-weight:500}
+.radar .tick{fill:var(--muted);font-size:13px}
+.insight{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 14px}
+.insight div{border:1px solid var(--line);border-radius:12px;padding:10px}
+.insight small{display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+.insight strong{font-size:1rem}
+.cattbl{width:100%;border-collapse:collapse;font-size:.9rem;margin-bottom:6px}
+.cattbl th{text-align:left;color:var(--muted);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;padding:0 6px 8px}
+.cattbl th.n,.cattbl td.n{text-align:right;white-space:nowrap}
+.cattbl td{padding:9px 6px;border-top:1px solid var(--line);vertical-align:middle}
+.meter{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:5px}
+.meter i{display:block;height:100%;border-radius:99px}
+.empty{color:var(--muted);text-align:center;padding:16px 0}
+.setting{margin-bottom:22px}
+.setting > label{display:block;font-weight:650;margin-bottom:8px}
+.seg{display:flex;border:1.5px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;background:none;color:var(--muted);padding:9px 6px;border-radius:9px;font-weight:600;font-size:.92rem}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.about{color:var(--muted);font-size:.9rem;margin:0}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);border-top:1px solid var(--line);
+  display:flex;justify-content:center;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.tabbar .inner{display:flex;width:100%;max-width:560px}
+.tabbar button{flex:1;min-width:0;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:.66rem;font-weight:600;border-radius:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabbar svg{width:22px;height:22px;flex:none}
+.tabbar button.on{color:var(--accent)}
+.inputwrap span:empty{display:none}
+.best-worst{display:grid;gap:8px;margin:0 0 6px}
+.best-worst div{border:1px solid var(--line);border-radius:12px;padding:10px;font-size:.9rem}
+.best-worst small{display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+#statsBody .rhit,#statsBody tr[data-cat]{cursor:pointer}
+#statsBody tr[data-cat]:hover td{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+#statsBody tr.sel td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.radar .rhit.sel .lbl{fill:var(--accent)}
+.radar .rhit.sel .val{fill:var(--accent)}
+.cattbl td .chev{color:var(--muted);font-size:.8rem;margin-left:4px}
+.hint{color:var(--muted);font-size:.85rem;text-align:center;margin:-4px 0 14px}
+.detail{border:1.5px solid var(--accent);border-radius:16px;padding:14px 14px 10px;margin:4px 0 18px;scroll-margin-top:16px}
+.detail-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.detail-head h3{margin:0;color:var(--ink);font-size:1.05rem;text-transform:none;letter-spacing:0}
+.detail-head small{color:var(--muted)}
+.detail-head button{background:none;border:0;color:var(--muted);font-size:1.2rem;padding:0 4px;line-height:1}
+.catchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:thin}
+.catchips button{flex:none;padding:5px 10px;font-size:.8rem;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:99px;font-weight:600}
+.catchips button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.detail .insight{margin:0 0 12px}
+.detail .insight strong{font-size:.95rem}
+.chart-t{font-size:.78rem;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 4px}
+.dist{width:100%;height:auto;display:block}
+.dist text{font-family:inherit}
+.legend{color:var(--muted);font-size:.78rem;margin:4px 0 0;line-height:1.4}
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translate(-50%,-220%);visibility:hidden;opacity:0;pointer-events:none;z-index:30;background:var(--card);border:1.5px solid var(--accent);
+  box-shadow:0 10px 30px rgba(0,0,0,.18);border-radius:14px;padding:10px 16px;display:flex;gap:12px;align-items:center;transition:transform .4s cubic-bezier(.2,.9,.3,1.2),opacity .25s,visibility 0s .4s;max-width:calc(100% - 32px);width:max-content;cursor:pointer}
+.toast.on{transform:translate(-50%,0);visibility:visible;opacity:1;pointer-events:auto;transition:transform .4s cubic-bezier(.2,.9,.3,1.2),opacity .2s,visibility 0s}
+.toast .ti{font-size:1.8rem;line-height:1}
+.toast small{display:block;color:var(--accent);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+.toast b{font-size:.98rem}
+.achsum{margin:0 0 16px}
+.achsum .meter{height:8px;margin-top:6px}
+.achgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+@media (min-width:560px){.achgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ach{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:12px;row-gap:3px;align-items:start;align-content:start;min-width:0;overflow-wrap:break-word;hyphens:auto}
+.ach > *{grid-column:2;min-width:0}
+.ach .ai{grid-column:1;grid-row:1 / span 4;font-size:1.8rem;line-height:1.1;text-align:center}
+.ach.locked .ai{filter:grayscale(1);opacity:.35}
+.ach b{font-size:.92rem;line-height:1.25}
+.ach p{margin:0;color:var(--muted);font-size:.78rem;line-height:1.35}
+.ach.got{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.ach .meter{margin-top:4px}
+.ach small{color:var(--muted);font-size:.74rem;margin-top:2px}
+.btn2:disabled{opacity:.55;cursor:default}
+.revnote{font-weight:650;font-size:.88rem;margin:2px 0 12px;color:var(--muted)}
+.revnote.ok{color:var(--good)}
+.anc{display:flex;gap:12px;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;align-items:flex-start}
+.anc .ai{font-size:1.6rem;line-height:1.1;flex:none;width:32px;text-align:center}
+.anc small{display:block;color:var(--muted);font-size:.78rem;font-weight:600}
+.anc .av{font-size:1.15rem;font-weight:800;letter-spacing:-.01em}
+.anc p{margin:3px 0 0;color:var(--muted);font-size:.82rem;line-height:1.4}
+.anc.locked .ai{filter:grayscale(1);opacity:.35}
+.anc.got{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.lessons{display:grid;gap:10px}
+.lcard{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;background:none;width:100%;text-align:left;color:var(--ink);font:inherit;font-weight:400}
+.lcard .ln{flex:none;width:40px;height:40px;border-radius:11px;background:color-mix(in srgb,var(--accent) 12%,transparent);display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.lcard b{display:block;font-size:.98rem;font-weight:700}
+.lcard small{color:var(--muted);font-size:.8rem;line-height:1.35;display:block}
+.lcard .ld{margin-left:auto;flex:none;font-size:.8rem;font-weight:700}
+.lesson p{line-height:1.6;margin:0 0 12px}
+.lbox{border-radius:14px;padding:12px 14px;margin:16px 0;border:1px solid var(--line)}
+.lbox.ex{background:color-mix(in srgb,var(--good) 7%,transparent);border-color:color-mix(in srgb,var(--good) 30%,var(--line))}
+.lbox.pr{border:1.5px solid var(--accent)}
+.lbox .lb-t{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.lbox ol{margin:0;padding-left:20px}
+.lbox li{margin:5px 0;font-size:.93rem;line-height:1.45}
+.lq{font-weight:700;font-size:1.05rem;margin:0 0 6px}
+.bounds{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}
+.inputwrap.small{margin-top:0}
+.inputwrap.small input{font-size:.95rem;padding:9px 10px}
+.gm{font-size:.85rem;color:var(--muted);margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gm button{flex:none;padding:6px 10px;font-size:.8rem;border:1.5px solid var(--line);background:none;color:var(--ink);border-radius:9px}
+.gm button:disabled{opacity:.45}
+.lres{margin-top:14px;scroll-margin-top:16px}
+.sol{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:.9rem;line-height:1.55;margin:4px 0 14px}
+.back{background:none;border:0;color:var(--muted);font-weight:650;padding:0 0 12px;font-size:.9rem}
+.hidden{display:none!important}
+#bQuit{margin-top:18px;padding-top:10px;padding-bottom:10px}
+#bStop{margin-top:14px}
+.cmptbl{width:100%;border-collapse:collapse;font-size:.86rem;margin:4px 0 8px;table-layout:fixed}
+.cmptbl th:first-child{width:36%}
+.cmptbl th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:0 6px 6px;text-align:right}
+.cmptbl th:first-child,.cmptbl td:first-child{text-align:left;padding-left:0}
+.cmptbl td{padding:8px 4px;border-top:1px solid var(--line);text-align:right;overflow-wrap:break-word;vertical-align:top}
+.cmptbl td:first-child{white-space:normal;color:var(--muted)}
+.cmptbl td b.up{color:var(--good)} .cmptbl td b.down{color:var(--bad)}
+.timer{position:relative;height:26px;border-radius:9px;background:var(--line);overflow:hidden;margin:2px 0 14px}
+.timer i{position:absolute;inset:0 auto 0 0;background:var(--good);border-radius:9px;transition:width .1s linear,background .3s}
+.timer.warn i{background:var(--mid)}
+.timer.crit i{background:var(--bad)}
+.timer span{position:relative;display:flex;align-items:center;justify-content:center;height:100%;font-size:.82rem;font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="logo" id="logo">📏 <span id="brand"></span></div>
+  </header>
+
+  <!-- Start -->
+  <section id="vStart" class="card">
+    <h1 data-i18n="heroTitle"></h1>
+    <p class="lead" data-i18n="heroLead"></p>
+    <div class="stack">
+      <button class="btn" id="bDaily"></button>
+      <button class="btn2" id="bRound"></button>
+      <button class="btn2" id="bEndless"></button>
+      <button class="btn2" id="bSurvival"></button>
+      <button class="btn2" id="bBlitz"></button>
+      <button class="btn2" id="bReview"></button>
+      <details class="catbox" id="catBox">
+        <summary id="catSum"></summary>
+        <div class="catact"><button type="button" id="catAll"></button><button type="button" id="catNone"></button></div>
+        <div class="catlist" id="catList"></div>
+      </details>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <details>
+      <summary data-i18n="howTitle"></summary>
+      <div id="howText"></div>
+    </details>
+  </section>
+
+  <!-- Frage -->
+  <section id="vQ" class="card hidden">
+    <div class="meta"><span id="qNum"></span><span id="qScore"></span></div>
+    <div class="progress" id="progWrap"><i id="prog"></i></div>
+    <div class="timer hidden" id="timer"><i id="timerBar"></i><span id="timerTxt"></span></div>
+    <div class="tag" id="qCat"></div>
+    <h2 id="qText"></h2>
+    <form id="form" autocomplete="off">
+      <div class="inputwrap">
+        <input id="guess" inputmode="decimal">
+        <span id="qUnit"></span>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="preview" id="preview">&nbsp;</div>
+      <button class="btn" type="submit" data-i18n="submit"></button>
+    </form>
+    <button class="linkbtn" id="bQuit"></button>
+  </section>
+
+  <!-- Auflösung -->
+  <section id="vA" class="card hidden">
+    <div class="meta"><span id="aNum"></span><span id="aScore"></span></div>
+    <div class="result">
+      <div class="points" id="aPts"></div>
+      <div class="verdict" id="aVerdict"></div>
+      <div class="lifelost hidden" id="aLife"></div>
+      <div class="revnote hidden" id="aRev"></div>
+    </div>
+    <div class="scale" id="scale"></div>
+    <div class="cmp">
+      <div><small data-i18n="yourGuess"></small><strong id="aGuess"></strong></div>
+      <div><small data-i18n="correct"></small><strong id="aTrue"></strong></div>
+    </div>
+    <p class="note" id="aNote"></p>
+    <button class="btn" id="bNext"></button>
+    <button class="linkbtn hidden" id="bStop"></button>
+  </section>
+
+  <!-- Ende -->
+  <section id="vEnd" class="card hidden">
+    <h1 id="eTitle"></h1>
+    <p class="lead" id="eSub"></p>
+    <div id="eStats"></div>
+    <h3 id="eListH" class="hidden"></h3>
+    <ul class="list" id="eList"></ul>
+    <div class="stack">
+      <button class="btn" id="bShare"></button>
+      <button class="btn2" id="bAgain"></button>
+    </div>
+  </section>
+
+  <!-- Statistik -->
+  <section id="vLearn" class="card hidden">
+    <h1 id="learnH"></h1>
+    <div id="learnBody"></div>
+  </section>
+
+  <section id="vStats" class="card hidden">
+    <h1 data-i18n="statsTitle"></h1>
+    <p class="lead" data-i18n="statsLead"></p>
+    <div id="statsBody"></div>
+  </section>
+
+  <!-- Einstellungen -->
+  <section id="vAch" class="card hidden">
+    <h1 id="achH"></h1>
+    <div id="achBody"></div>
+  </section>
+
+  <section id="vSettings" class="card hidden">
+    <h1 data-i18n="settingsTitle"></h1>
+    <div id="settingsBody"></div>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <div class="inner">
+    <button data-tab="play">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></svg>
+      <span data-i18n="tabPlay"></span>
+    </button>
+    <button data-tab="learn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5.5c2.6-1.4 5.8-1.4 9.5.8 3.7-2.2 6.9-2.2 9.5-.8v13c-2.6-1.4-5.8-1.4-9.5.8-3.7-2.2-6.9-2.2-9.5-.8z"/><path d="M12 6.3v13"/></svg>
+      <span data-i18n="tabLearn"></span>
+    </button>
+    <button data-tab="stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l9 6.5-3.5 10.5h-11L3 9z"/><path d="M12 7.5l4.5 3-1.8 5.5H9.8L7.5 10.5z"/></svg>
+      <span data-i18n="tabStats"></span>
+    </button>
+    <button data-tab="ach">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.5h8V9a4 4 0 0 1-8 0z"/><path d="M8 5.5H5v1.5a3 3 0 0 0 3 3M16 5.5h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4M8.5 20.5h7M9.5 17h5v3.5h-5z"/></svg>
+      <span data-i18n="tabAch"></span>
+    </button>
+    <button data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span data-i18n="tabSettings"></span>
+    </button>
+  </div>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="questions.js"></script>
+<script src="questions_en.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){
+    try{
+      const v = localStorage.getItem('sm_'+k); if(!v) return d;
+      const x = JSON.parse(v);
+      if(x === null || x === undefined) return d;
+      if(d && typeof d === 'object' && !Array.isArray(d) && typeof x === 'object' && !Array.isArray(x)) return Object.assign({}, d, x);
+      return x;
+    }catch(e){ return d }
+  },
+  set(k, v){ try{ localStorage.setItem('sm_'+k, JSON.stringify(v)) }catch(e){} }
+};
+const settings = Object.assign({lang:'de', theme:'system', roundLen:10, blitzSec:15}, store.get('settings', {}));
+const saveSettings = () => store.set('settings', settings);
+const LIVES = 3, LIFE_THRESHOLD = 50, BLITZ_N = 10;
+
+/* ── Texte ── */
+const T = {
+  de: {
+    brand: 'Schätz<b>meister</b>', tabPlay: 'Spielen', tabStats: 'Statistik', tabSettings: 'Einstellungen', tabAch: 'Erfolge', tabLearn: 'Lernen', learnTitle: 'Lernen',
+    learnLead: 'Sechs kurze Lektionen, wie man gut schätzt – jeweils mit Beispiel und Übungsfrage. Die Übungen zählen nicht in die Statistik.',
+    allLessons: 'Alle Lektionen', example: 'Beispiel', practice: 'Übung', check: 'Prüfen', howTo: 'So geht’s:', tryAgain: 'Nochmal versuchen',
+    nextLesson: 'Nächste Lektion →', toOverview: 'Zur Übersicht', tooLowPh: 'sicher zu wenig', tooHighPh: 'sicher zu viel',
+    gmHint: 'Trag zwei Grenzen ein – die App rechnet die Mitte aus.', gmRes: 'Geometrisches Mittel', gmUse: 'Übernehmen', achTitle: 'Errungenschaften', achLead: (u,n) => `${u} von ${n} freigeschaltet`, achNew: 'Errungenschaft freigeschaltet', achMany: n => `${n} neue Freischaltungen`,
+    review: 'Fehler wiederholen ↺', reviewSub: n => n ? `${n} ${n===1?'Karte':'Karten'} im Stapel – üben, bis sie sitzen` : 'Noch keine Fehler – Fragen unter 50 Punkten landen hier',
+    revAdded: '📥 Kommt in deinen Fehler-Stapel', revProgress: '✓ Richtig – noch einmal, dann sitzt sie', revMastered: '🎓 Gemeistert – raus aus dem Stapel', revAgain: '↺ Noch nicht – kommt wieder',
+    revEnd: (m, left) => ` ${m} gemeistert, ${left} noch im Stapel.`,
+    anchTitle: 'Merkzahlen', anchLead: (u,n) => `${u} von ${n} Merkzahlen freigeschaltet`,
+    anchIntro: 'Ankerwerte, aus denen du viele andere Größen herleiten kannst. Eine Merkzahl schaltest du frei, indem du die passende Frage in einem normalen Spiel (Tagesrätsel, Freies Spiel, Endlos, Überleben oder Fehler wiederholen) mit mindestens 80 Punkten beantwortest.',
+    anchLocked: q => `Wird freigeschaltet, wenn dir „${q}“ im Spiel mit mindestens 80 Punkten gelingt.`, anchorNew: 'Merkzahl freigeschaltet', achOn: d => `Freigeschaltet am ${d}`,
+    heroTitle: 'Wie gut schätzt du?',
+    heroLead: 'Rate Zahlen, die du nicht kennen kannst. Je näher du dran bist, desto mehr Punkte – gemessen in Größenordnungen, nicht in exakten Werten.',
+    daily: 'Tagesrätsel · 5 Fragen', dailyDone: 'Tagesrätsel ✓ ansehen',
+    free: n => `Freies Spiel · ${n} Fragen`,
+    endless: 'Endlosmodus ∞', endlessSub: 'Ohne Ende – aufhören, wann du willst, mit Auswertung',
+    survival: 'Überlebensmodus ❤️', survivalSub: r => `${LIVES} Leben – ab Faktor 6 daneben kostet's eins` + (r ? ` · Rekord ${r}` : ''),
+    blitz: 'Blitzmodus ⚡', blitzSub: (s, r) => `${BLITZ_N} Fragen · ${s} Sekunden pro Frage` + (r ? ` · Rekord ${r}` : ''),
+    blitzSec: 'Zeit pro Frage im Blitzmodus', avgTime: 'Ø Zeit pro Frage', fastest: 'Schnellste Antwort', timeouts: 'Zeit abgelaufen', rounds: 'Runden', bRecord: 'Rekord',
+    roundChart: 'Zeit pro Frage', roundLegend: 'Balkenhöhe = benötigte Zeit, Zahl darüber = Punkte, Farbe = Treffsicherheit. ⏱ = Zeit abgelaufen.',
+    precTitle: 'Präzision unter Zeitdruck', withClock: 'Blitz', noClock: 'Ohne Uhr',
+    precSame: 'Unter Zeitdruck schätzt du praktisch genauso gut wie ohne – starke Nerven!', precWorse: d => `Unter Zeitdruck holst du im Schnitt ${d} Punkte weniger pro Frage als ohne Uhr.`, precBetter: d => `Unter Zeitdruck holst du im Schnitt sogar ${d} Punkte mehr pro Frage als ohne Uhr.`,
+    timeChart: 'Punkte nach Antwortzeit (Sekunden)', timeLegend: 'Durchschnittliche Punkte für Antworten in diesem Zeitraum, darunter die Anzahl. Abgelaufene Zeit zählt hier nicht mit.', timeUp: '⏱ Zeit abgelaufen – 0 Punkte', timeUpShort: '⏱ Zeit abgelaufen', secs: s => `${nf(2).format(s)} s`,
+    inTime: s => ` · in ${nf(2).format(s)} s`, autoSub: ' · bei Zeitablauf gewertet',
+    blitzEnd: (a, n) => ` Ø ${nf(2).format(a)} s pro Frage` + (n ? `, ${n}× Zeit abgelaufen.` : ', immer rechtzeitig.'),
+    allCats: n => `Alle Kategorien (${n})`, catsSome: (k, n, q) => `${k} von ${n} Kategorien · ${q} Fragen`, catsAll: 'Alle', catsOne: 'Keine', catsNone: 'Keine Kategorie ausgewählt',
+    games: 'Spiele', avg: 'Schnitt', streak: 'Tagesserie',
+    howTitle: 'Wie wird gewertet?',
+    howText: `<p>Pro Frage gibt es bis zu 100 Punkte. Entscheidend ist, um welchen <b>Faktor</b> du danebenliegst: Faktor 1,5 ≈ 86 Punkte, Faktor 2 ≈ 78, Faktor 10 ≈ 35, ab Faktor 100 gibt es nichts mehr.</p>
+      <p>Im Überlebensmodus verlierst du ein Leben, wenn du unter 50 Punkte bekommst (etwa Faktor 6 daneben).</p>
+      <p>Im Blitzmodus läuft pro Frage eine Uhr. Was beim Ablauf im Feld steht, wird gewertet – ein leeres Feld bringt 0 Punkte.</p>
+      <p>Eingabe: <code>1500000</code>, <code>1,5 Mio</code>, <code>2 Mrd</code>, <code>300k</code> oder <code>4e9</code> funktionieren alle.</p>`,
+    qOf: (i,n) => `Frage ${i} / ${n}`, qN: i => `Frage ${i}`, pts: n => `${n} Punkte`,
+    placeholder: 'Deine Schätzung', submit: 'Schätzen',
+    errPos: 'Bitte eine positive Zahl eingeben', errEmpty: 'Bitte eine Schätzung eingeben',
+    yourGuess: 'Deine Schätzung', correct: 'Richtig',
+    bullseye: 'Volltreffer! 🎯', vClose: 'Sehr nah – ', vGood: 'Gut – ', vOff: 'Daneben – ', vFar: 'Weit weg – ',
+    high: 'zu hoch', low: 'zu niedrig',
+    next: 'Nächste Frage', toResult: 'Ergebnis ansehen', lifeLost: n => `−1 ❤️ · noch ${n} Leben`,
+    quitRound: 'Runde abbrechen', quitEndless: 'Aufhören & Auswertung', quitSurvival: 'Beenden & werten', stop: 'Aufhören & Auswertung',
+    sessionSub: (n,a) => `Sitzung beendet – ${n} ${n===1?'Frage':'Fragen'}, Ø ${a} Punkte pro Frage.`, bestAns: 'Bester Treffer', worstAns: 'Größter Ausreißer', sessionCats: 'Diese Sitzung nach Kategorie', yourAnswers: 'Deine Antworten',
+    outOf: (a,b) => `${a} / ${b} Punkte`, gameOver: n => `Spiel vorbei – ${n} ${n===1?'Frage':'Fragen'} beantwortet.`,
+    newRecord: ' Neuer Rekord! 🏆', record: r => ` Rekord: ${r} Punkte.`,
+    already: 'Das heutige Rätsel hast du schon gespielt. ',
+    r80: 'Fermi wäre stolz auf dich.', r60: 'Starkes Gespür für Größenordnungen!', r40: 'Solide geschätzt.', r0: 'Übung macht den Schätzmeister.',
+    you: 'Du', right: 'Richtig',
+    share: 'Ergebnis teilen', copied: 'Kopiert ✓', again: 'Nochmal spielen', startFree: 'Freies Spiel starten',
+    statsTitle: 'Deine Stärken', statsLead: 'Durchschnittliche Punkte pro Frage, nach Kategorie.',
+    noData: 'Noch keine Daten – spiel ein paar Runden, dann füllt sich das Diagramm.',
+    strongest: 'Stärkste', weakest: 'Schwächste', avgAll: 'Ø gesamt', answered: 'Beantwortet',
+    within2: 'Innerhalb Faktor 2', hits: 'Volltreffer', tendency: 'Tendenz deiner Schätzungen',
+    detailHint: 'Tippe auf eine Kategorie, um die Verteilung deiner Schätzungen zu sehen.',
+    allShort: 'Alle', nEst: n => `${n} ${n===1?'Schätzung':'Schätzungen'}`, close: 'Schließen',
+    noDetail: 'Hier gibt es noch keine erfassten Schätzungen. Die einzelnen Abweichungen werden ab dieser Version gespeichert.',
+    typDev: 'Typische Abweichung', spread: 'Streuung', bias: 'Systematisch', fx: f => `Faktor ${f}`, fxHigh: f => `Faktor ${f} zu hoch`, fxLow: f => `Faktor ${f} zu niedrig`,
+    dotTitle: 'Jede Schätzung im Vergleich zur richtigen Antwort', histTitle: 'Verteilung der Abweichungen', correctLbl: 'richtig',
+    tooLowShort: '← zu niedrig', tooHighShort: 'zu hoch →',
+    legend: 'Die Mitte ist die richtige Antwort, jeder Punkt eine Schätzung. Der Kreis oben zeigt deinen Durchschnitt (Ø), der Balken deine Streuung (±1 Standardabweichung). Das Histogramm wird feiner, je mehr Schätzungen du hast. Typische Abweichung = Median, um welchen Faktor du danebenliegst.',
+    balanced: 'ausgeglichen', tooHigh: p => `eher zu hoch (${p} %)`, tooLow: p => `eher zu niedrig (${p} %)`,
+    category: 'Kategorie', questions: 'Fragen', best: 'Best', nQ: n => `${n} Fragen`, nP: n => `${n} Punkte`,
+    overall: 'Allgemein', played: 'Gespielt', bestRound: 'Beste Runde', survivalRec: 'Überleben-Rekord', endlessRecQ: n => `${n} Fragen`,
+    settingsTitle: 'Einstellungen', language: 'Sprache', theme: 'Design', themeSys: 'System', themeLight: 'Hell', themeDark: 'Dunkel',
+    roundLen: 'Fragen pro freiem Spiel', data: 'Daten', csvExport: 'Daten exportieren (CSV)', csvImport: 'Daten importieren (CSV)', csvHint: 'Sichere deinen Fortschritt als CSV-Datei oder übertrage ihn auf ein anderes Gerät.', csvExported: n => `Exportiert (${n} Datenblöcke). Die Datei liegt in deinen Downloads.`, csvBad: 'Diese Datei ist keine gültige Schätzmeister-Sicherung.', csvConfirm: n => `Sicherung mit ${n} Datenblöcken gefunden. Deine aktuellen Daten auf diesem Gerät werden dadurch ersetzt. Fortfahren?`, csvImported: 'Importiert ✓ Die App lädt neu …', reset: 'Statistik zurücksetzen', resetConfirm: 'Wirklich alles löschen? Nochmal tippen', resetDone: 'Gelöscht ✓',
+    about: 'Über', aboutText: n => `${n} Fragen in 11 Kategorien. Das Spiel läuft komplett im Browser und nach dem ersten Laden auch offline. Dein Fortschritt wird nur auf diesem Gerät gespeichert.`,
+    chips: [['Tsd','Tsd'],['Mio','Mio'],['Mrd','Mrd'],['Bio','Bio'],['×10ⁿ','e']],
+    words: [[1e18,'Trillionen'],[1e15,'Billiarden'],[1e12,'Billionen'],[1e9,'Milliarden'],[1e6,'Millionen']],
+    locale: 'de-DE', name: 'Schätzmeister',
+  },
+  en: {
+    brand: 'Esti<b>master</b>', tabPlay: 'Play', tabStats: 'Stats', tabSettings: 'Settings', tabAch: 'Awards', tabLearn: 'Learn', learnTitle: 'Learn',
+    learnLead: 'Six short lessons on how to estimate well – each with a worked example and a practice question. Practice answers don’t count towards your stats.',
+    allLessons: 'All lessons', example: 'Example', practice: 'Practice', check: 'Check', howTo: 'How it works:', tryAgain: 'Try again',
+    nextLesson: 'Next lesson →', toOverview: 'Back to overview', tooLowPh: 'surely too low', tooHighPh: 'surely too high',
+    gmHint: 'Enter two bounds – the app works out the middle.', gmRes: 'Geometric mean', gmUse: 'Use it', achTitle: 'Achievements', achLead: (u,n) => `${u} of ${n} unlocked`, achNew: 'Achievement unlocked', achMany: n => `${n} new unlocks`,
+    review: 'Review mistakes ↺', reviewSub: n => n ? `${n} ${n===1?'card':'cards'} in your deck – practise until they stick` : 'No mistakes yet – questions scoring below 50 land here',
+    revAdded: '📥 Added to your mistakes deck', revProgress: '✓ Correct – once more and it sticks', revMastered: '🎓 Mastered – removed from the deck', revAgain: '↺ Not yet – it will come back',
+    revEnd: (m, left) => ` ${m} mastered, ${left} left in the deck.`,
+    anchTitle: 'Anchor numbers', anchLead: (u,n) => `${u} of ${n} anchor numbers unlocked`,
+    anchIntro: 'Reference values you can use to work out lots of other quantities. You unlock one by answering the matching question with at least 80 points in a regular game (daily puzzle, free play, endless, survival or review).',
+    anchLocked: q => `Unlocks when you score at least 80 points on “${q}” in a game.`, anchorNew: 'Anchor number unlocked', achOn: d => `Unlocked ${d}`,
+    heroTitle: 'How good are your guesses?',
+    heroLead: 'Guess numbers you can’t possibly know. The closer you get, the more points you score – measured in orders of magnitude, not exact values.',
+    daily: 'Daily puzzle · 5 questions', dailyDone: 'Daily puzzle ✓ view',
+    free: n => `Free play · ${n} questions`,
+    endless: 'Endless mode ∞', endlessSub: 'Never ends – stop whenever you like and see your stats',
+    survival: 'Survival mode ❤️', survivalSub: r => `${LIVES} lives – off by 6× or more costs one` + (r ? ` · Best ${r}` : ''),
+    blitz: 'Blitz mode ⚡', blitzSub: (s, r) => `${BLITZ_N} questions · ${s} seconds each` + (r ? ` · Best ${r}` : ''),
+    blitzSec: 'Time per question in blitz mode', avgTime: 'Avg time per question', fastest: 'Fastest answer', timeouts: 'Time ran out', rounds: 'Rounds', bRecord: 'Best',
+    roundChart: 'Time per question', roundLegend: 'Bar height = time taken, number above = points, colour = accuracy. ⏱ = time ran out.',
+    precTitle: 'Precision under time pressure', withClock: 'Blitz', noClock: 'No clock',
+    precSame: 'You estimate just as well under time pressure as without – nerves of steel!', precWorse: d => `Under time pressure you score ${d} points less per question on average than without a clock.`, precBetter: d => `Under time pressure you actually score ${d} points more per question on average than without a clock.`,
+    timeChart: 'Points by answer time (seconds)', timeLegend: 'Average points for answers in each time range, with the number of answers below. Answers where time ran out are not included.', timeUp: '⏱ Time’s up – 0 points', timeUpShort: '⏱ Time’s up', secs: s => `${nf(2).format(s)} s`,
+    inTime: s => ` · in ${nf(2).format(s)} s`, autoSub: ' · scored when time ran out',
+    blitzEnd: (a, n) => ` Avg ${nf(2).format(a)} s per question` + (n ? `, ran out of time ${n}×.` : ', always in time.'),
+    allCats: n => `All categories (${n})`, catsSome: (k, n, q) => `${k} of ${n} categories · ${q} questions`, catsAll: 'All', catsOne: 'None', catsNone: 'No category selected',
+    games: 'Games', avg: 'Average', streak: 'Daily streak',
+    howTitle: 'How does scoring work?',
+    howText: `<p>Each question is worth up to 100 points. What counts is the <b>factor</b> you’re off by: 1.5× ≈ 86 points, 2× ≈ 78, 10× ≈ 35, and from 100× you get nothing.</p>
+      <p>In survival mode you lose a life whenever you score below 50 (roughly 6× off).</p>
+      <p>In blitz mode a clock runs on every question. Whatever is in the box when time runs out gets scored – an empty box earns 0 points.</p>
+      <p>Input: <code>1500000</code>, <code>1.5m</code>, <code>2 bn</code>, <code>300k</code> or <code>4e9</code> all work.</p>`,
+    qOf: (i,n) => `Question ${i} / ${n}`, qN: i => `Question ${i}`, pts: n => `${n} points`,
+    placeholder: 'Your estimate', submit: 'Guess',
+    errPos: 'Please enter a positive number', errEmpty: 'Please enter an estimate',
+    yourGuess: 'Your estimate', correct: 'Answer',
+    bullseye: 'Bullseye! 🎯', vClose: 'Very close – ', vGood: 'Good – ', vOff: 'Off – ', vFar: 'Way off – ',
+    high: 'too high', low: 'too low',
+    next: 'Next question', toResult: 'See results', lifeLost: n => `−1 ❤️ · ${n} ${n===1?'life':'lives'} left`,
+    quitRound: 'Abandon round', quitEndless: 'Stop & see stats', quitSurvival: 'End & score', stop: 'Stop & see stats',
+    sessionSub: (n,a) => `Session over – ${n} ${n===1?'question':'questions'}, avg ${a} points per question.`, bestAns: 'Best guess', worstAns: 'Biggest miss', sessionCats: 'This session by category', yourAnswers: 'Your answers',
+    outOf: (a,b) => `${a} / ${b} points`, gameOver: n => `Game over – ${n} ${n===1?'question':'questions'} answered.`,
+    newRecord: ' New record! 🏆', record: r => ` Best: ${r} points.`,
+    already: 'You’ve already played today’s puzzle. ',
+    r80: 'Fermi would be proud.', r60: 'Great sense for orders of magnitude!', r40: 'Solid estimating.', r0: 'Practice makes perfect.',
+    you: 'You', right: 'Answer',
+    share: 'Share result', copied: 'Copied ✓', again: 'Play again', startFree: 'Start free play',
+    statsTitle: 'Your strengths', statsLead: 'Average points per question, by category.',
+    noData: 'No data yet – play a few rounds and the chart will fill up.',
+    strongest: 'Strongest', weakest: 'Weakest', avgAll: 'Overall avg', answered: 'Answered',
+    within2: 'Within 2×', hits: 'Bullseyes', tendency: 'Your estimates tend to be',
+    detailHint: 'Tap a category to see how your estimates are spread.',
+    allShort: 'All', nEst: n => `${n} ${n===1?'estimate':'estimates'}`, close: 'Close',
+    noDetail: 'No recorded estimates here yet. Individual misses are stored from this version on.',
+    typDev: 'Typical miss', spread: 'Spread', bias: 'Bias', fx: f => `${f}×`, fxHigh: f => `${f}× too high`, fxLow: f => `${f}× too low`,
+    dotTitle: 'Each estimate compared to the correct answer', histTitle: 'Distribution of misses', correctLbl: 'correct',
+    tooLowShort: '← too low', tooHighShort: 'too high →',
+    legend: 'The centre is the correct answer, each dot one estimate. The circle on top marks your average (Ø), the bar your spread (±1 standard deviation). The histogram gets finer the more estimates you have. Typical miss = median factor you are off by.',
+    balanced: 'balanced', tooHigh: p => `too high (${p} %)`, tooLow: p => `too low (${p} %)`,
+    category: 'Category', questions: 'Qs', best: 'Best', nQ: n => `${n} questions`, nP: n => `${n} points`,
+    overall: 'Overall', played: 'Played', bestRound: 'Best round', survivalRec: 'Survival best', endlessRecQ: n => `${n} questions`,
+    settingsTitle: 'Settings', language: 'Language', theme: 'Theme', themeSys: 'System', themeLight: 'Light', themeDark: 'Dark',
+    roundLen: 'Questions per free game', data: 'Data', csvExport: 'Export data (CSV)', csvImport: 'Import data (CSV)', csvHint: 'Back up your progress as a CSV file or move it to another device.', csvExported: n => `Exported (${n} data blocks). The file is in your downloads.`, csvBad: 'This file is not a valid Schätzmeister backup.', csvConfirm: n => `Found a backup with ${n} data blocks. This replaces your current data on this device. Continue?`, csvImported: 'Imported ✓ Reloading …', reset: 'Reset statistics', resetConfirm: 'Really delete everything? Tap again', resetDone: 'Deleted ✓',
+    about: 'About', aboutText: n => `${n} questions in 11 categories. The game runs entirely in your browser and works offline after the first load. Your progress is stored only on this device.`,
+    chips: [['K','k'],['M','m'],['B','bn'],['T','tn'],['×10ⁿ','e']],
+    words: [[1e18,'quintillion'],[1e15,'quadrillion'],[1e12,'trillion'],[1e9,'billion'],[1e6,'million']],
+    locale: 'en-US', name: 'Estimaster',
+  }
+};
+const t = (k, ...a) => { const v = T[settings.lang][k] ?? T.de[k]; return typeof v === 'function' ? v(...a) : v; };
+const CAT_EN = {Weltraum:'Space', Geografie:'Geography', Menschen:'People', 'Körper':'Body', Natur:'Nature', Bauwerke:'Structures',
+  Verkehr:'Transport', Wirtschaft:'Economy', Technik:'Tech', Mathe:'Math', Alltag:'Everyday'};
+const catName = c => settings.lang === 'en' ? (CAT_EN[c] || c) : c;
+
+const Q = QUESTIONS.map((q,i) => {
+  const e = (typeof QUESTIONS_EN !== 'undefined' && QUESTIONS_EN[i]) || [q[1], q[3], q[4]];
+  return {id:i, cat:q[0], answer:q[2], de:{text:q[1], unit:q[3], note:q[4]||''}, en:{text:e[0], unit:e[1], note:e[2]||''}};
+});
+const L = q => q[settings.lang];
+const cats = [...new Set(Q.map(q=>q.cat))];
+// Ausgewählte Kategorien für Freies Spiel, Endlos- und Überlebensmodus (standardmäßig alle)
+let catSel = (() => {
+  let a = store.get('catSel', null);
+  if(!Array.isArray(a)){ const old = store.get('cat', ''); a = old ? [old] : cats; }
+  return new Set(a.filter(c => cats.includes(c)));
+})();
+function saveCatSel(){ store.set('catSel', [...catSel]); }
+
+/* ── Zahlen lesen & schreiben ── */
+const SUFFIX = {
+  de: [[/^(k|tsd\.?|tausend)$/,1e3],[/^(mio\.?|million(en)?)$/,1e6],[/^(mrd\.?|milliarde(n)?)$/,1e9],
+       [/^(bio\.?|billion(en)?)$/,1e12],[/^(brd\.?|billiarde(n)?)$/,1e15],[/^(trio\.?|trillion(en)?)$/,1e18]],
+  en: [[/^(k|thousand)$/,1e3],[/^(m|mn|mio|mil|millions?)$/,1e6],[/^(b|bn|billions?)$/,1e9],
+       [/^(t|tn|trillions?)$/,1e12],[/^(quadrillions?)$/,1e15],[/^(quintillions?)$/,1e18]]
+};
+function parseNum(raw){
+  let s = raw.trim().toLowerCase().replace(/[’' ]/g,'').replace(/×\s*10\^?/g,'e').replace(/\*\s*10\^/g,'e');
+  if(!s) return null;
+  const m = s.match(/^([0-9.,e+\-\s]+?)\s*([a-zäöü.]+)?$/);
+  if(!m) return NaN;
+  let n = m[1].replace(/\s/g,''), suf = m[2], mult = 1;
+  if(suf){ const hit = SUFFIX[settings.lang].find(([re]) => re.test(suf)); if(!hit) return NaN; mult = hit[1]; }
+  if(settings.lang === 'en') n = n.replace(/,/g,'');
+  else if(n.includes('.') && n.includes(',')) n = n.replace(/\./g,'').replace(',', '.');
+  else if(n.includes(',')) n = n.replace(',', '.');
+  else if(/^\d{1,3}(\.\d{3})+$/.test(n)) n = n.replace(/\./g,'');
+  if(/e$/.test(n)) return NaN;
+  const v = Number(n) * mult;
+  return isFinite(v) ? v : NaN;
+}
+const nf = d => new Intl.NumberFormat(t('locale'),{maximumSignificantDigits:d});
+const SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function fmt(v){
+  const a = Math.abs(v);
+  if(a >= 1e21 || (a > 0 && a < 1e-3)){
+    const e = Math.floor(Math.log10(a)), m = v / 10**e;
+    return nf(3).format(m) + ' × 10' + String(e).split('').map(c=>SUP[c]).join('');
+  }
+  for(const [b,w] of t('words')) if(a >= b) return nf(3).format(v/b) + ' ' + w;
+  return nf(6).format(v);
+}
+
+/* ── Wertung ── */
+function score(guess, ans){
+  if(!(guess > 0)) return {pts:0, factor:Infinity, high:false};
+  const e = Math.abs(Math.log10(guess/ans));
+  return {pts: Math.round(100 * Math.pow(Math.max(0, 1 - e/2), 1.5)), factor: 10**e, high: guess > ans};
+}
+function verdict(r){
+  if(r.factor < 1.05) return t('bullseye');
+  const f = r.factor < 10 ? nf(2).format(r.factor) : fmt(Math.round(r.factor));
+  const pre = r.pts >= 85 ? t('vClose') : r.pts >= 60 ? t('vGood') : r.pts >= 30 ? t('vOff') : t('vFar');
+  const fac = settings.lang === 'en' ? `${f}× ` : `Faktor ${f} `;
+  return pre + fac + (r.high ? t('high') : t('low'));
+}
+const color = p => p >= 75 ? 'var(--good)' : p >= 40 ? 'var(--mid)' : 'var(--bad)';
+
+/* ── Zufall ── */
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, r=Math.random){ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j = Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const dkey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const today = () => dkey(new Date());
+const hash = s => [...s].reduce((h,c) => Math.imul(h ^ c.charCodeAt(0), 16777619), 2166136261);
+
+/* ── Ansichten & Tabs ── */
+const PLAY_VIEWS = ['vStart','vQ','vA','vEnd'];
+let playView = 'vStart', game = null;
+function show(id){
+  for(const v of [...PLAY_VIEWS,'vLearn','vStats','vAch','vSettings']) $(v).classList.toggle('hidden', v !== id);
+  if(PLAY_VIEWS.includes(id)){ playView = id; setTab('play'); }
+  window.scrollTo(0,0);
+}
+function setTab(name){ document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name)); }
+function renderPlay(){
+  if(!game || playView === 'vStart') return home();
+  if(playView === 'vQ') return ask(true);
+  if(playView === 'vA') return renderAnswer();
+  home();
+}
+
+/* ── Spielstart ── */
+function startDaily(){
+  settleOpenGame();
+  const key = today(), done = store.get('daily', {});
+  const qs = shuffle(Q, rng(hash('sm'+key))).slice(0,5);
+  game = {mode:'daily', key, qs, i:0, results:[]};
+  if(done[key]){ game.results = done[key]; game.done = true; game.already = true; return renderEnd(); }
+  const prog = store.get('dailyProg', null);
+  if(prog && prog.key === key && Array.isArray(prog.results) && prog.results.length < qs.length){
+    game.results = prog.results; game.i = prog.results.length;
+  }
+  ask();
+}
+function poolFor(){ return catSel.size >= cats.length ? Q : Q.filter(q => catSel.has(q.cat)); }
+function startRound(){
+  if(!poolFor().length) return;
+  settleOpenGame();
+  const pool = poolFor(), n = Math.min(settings.roundLen, pool.length);
+  const seen = new Set(store.get('seen', []));
+  let fresh = pool.filter(q => !seen.has(q.id));
+  if(fresh.length < n){ store.set('seen', [...seen].filter(id => !pool.some(q => q.id === id))); fresh = pool; }
+  game = {mode:'round', qs: shuffle(fresh).slice(0, n), i:0, results:[]};
+  ask();
+}
+function startBlitz(){
+  if(!poolFor().length) return;
+  settleOpenGame();
+  game = {mode:'blitz', qs: shuffle(poolFor()).slice(0, BLITZ_N), i:0, results:[]};
+  ask();
+}
+const isOpen = () => game && (game.mode === 'endless' || game.mode === 'survival');
+function startEndless(survival){
+  if(!poolFor().length) return;
+  settleOpenGame();
+  const base = poolFor();
+  game = {mode: survival ? 'survival' : 'endless', base, pool: shuffle(base), qs:[], i:0, results:[], lives: survival ? LIVES : 0};
+  fillEndless(); ask();
+}
+function fillEndless(){
+  if(game.i < game.qs.length) return;
+  if(!game.pool.length) game.pool = shuffle(game.base);
+  game.qs.push(game.pool.pop());
+}
+const total = () => game.results.reduce((s,r)=>s+r.pts,0);
+const hearts = () => '❤️'.repeat(Math.max(0,game.lives)) + '🤍'.repeat(LIVES - Math.max(0,game.lives));
+
+/* ── Frage ── */
+function ask(keep){
+  const q = game.qs[game.i], endless = isOpen();
+  $('qNum').textContent = endless ? t('qN', game.i+1) : t('qOf', game.i+1, game.qs.length);
+  $('qScore').textContent = (game.mode === 'survival' ? hearts() + '  ' : '') + t('pts', total());
+  $('progWrap').classList.toggle('hidden', endless);
+  if(!endless) $('prog').style.width = (game.i/game.qs.length*100)+'%';
+  $('qCat').textContent = catName(q.cat);
+  $('qText').textContent = L(q).text;
+  $('qUnit').textContent = L(q).unit;
+  $('guess').placeholder = t('placeholder');
+  $('chips').innerHTML = t('chips').map(([l,s]) => `<button type="button" data-s="${s}">${l}</button>`).join('');
+  $('bQuit').textContent = game.mode === 'endless' ? t('quitEndless') : game.mode === 'survival' ? t('quitSurvival') : t('quitRound');
+  if(!keep) $('guess').value = '';
+  const blitz = game.mode === 'blitz';
+  $('timer').classList.toggle('hidden', !blitz);
+  if(blitz && (!keep || !game.deadline)){ game.qStart = Date.now(); game.deadline = game.qStart + settings.blitzSec * 1000; }
+  show('vQ');
+  if(blitz) blitzTick();
+  updatePreview();
+  if(!keep) setTimeout(() => $('guess').focus(), 50);
+}
+function updatePreview(){
+  if(!game || !game.qs[game.i]) return;
+  const v = parseNum($('guess').value), p = $('preview');
+  p.classList.remove('err');
+  if(v === null) p.innerHTML = '&nbsp;';
+  else if(isNaN(v) || v <= 0){ p.textContent = t('errPos'); p.classList.add('err'); }
+  else p.textContent = '= ' + fmt(v) + ' ' + L(game.qs[game.i]).unit;
+}
+function submit(e){
+  e.preventDefault();
+  if(!game || game.answered === game.i) return;
+  const v = parseNum($('guess').value);
+  if(!(v > 0)){ updatePreview(); const p = $('preview'); p.classList.add('err'); if(v === null) p.textContent = t('errEmpty'); return; }
+  answer(v);
+}
+/* ── Blitz-Uhr ── */
+function blitzTick(){
+  if(!game || game.mode !== 'blitz' || game.done || !game.deadline || $('vQ').classList.contains('hidden')) return;
+  const left = Math.max(0, game.deadline - Date.now()), frac = left / (settings.blitzSec * 1000);
+  $('timerBar').style.width = (frac * 100) + '%';
+  $('timerTxt').textContent = t('secs', Math.ceil(left / 100) / 10);
+  $('timer').className = 'timer' + (frac <= .2 ? ' crit' : frac <= .45 ? ' warn' : '');
+  if(left <= 0){ const v = parseNum($('guess').value); answer(v > 0 ? v : null, true); }
+}
+setInterval(blitzTick, 100);
+function answer(v, auto){
+  const q = game.qs[game.i], to = v == null, r = to ? {pts:0, factor:Infinity, high:false} : score(v, q.answer);
+  game.answered = game.i;
+  let secs = null;
+  if(game.mode === 'blitz'){ secs = Math.min(settings.blitzSec, (Date.now() - game.qStart) / 1000); game.deadline = null; }
+  const res = {id:q.id, guess: to ? 0 : v, pts:r.pts};
+  if(to) res.to = 1;
+  if(secs != null) res.s = Math.round(secs * 10) / 10;
+  game.results.push(res);
+  let lifeLost = false;
+  if(game.mode === 'survival' && r.pts < LIFE_THRESHOLD){ game.lives--; lifeLost = true; }
+  game.last = {q, v, r, lifeLost, to, auto: auto && !to, secs};
+  if(to){
+    const p = loadProg(); p.good = 0; p.hit = 0; saveProg(p);
+    saveActive(); renderAnswer(); return;
+  }
+  if(game.mode === 'round'){ const s = store.get('seen', []); s.push(q.id); store.set('seen', s); }
+  const cs = store.get('cats', {}), c = cs[q.cat] || {n:0, sum:0, best:0, hits:0, close:0, high:0};
+  c.n++; c.sum += r.pts; c.best = Math.max(c.best, r.pts);
+  if(r.factor < 1.05) c.hits++;
+  if(r.factor <= 2) c.close++;
+  if(r.high) c.high++;
+  cs[q.cat] = c; store.set('cats', cs);
+  logAnswer(q.cat, v, q.answer, r.pts, q.id, secs);
+  game.last.rev = updateRev(q.id, r.pts);
+  if(game.mode === 'review' && game.last.rev === 'mastered') game.mastered = (game.mastered || 0) + 1;
+  unlockAnchors(q.id, r.pts);
+  saveActive();
+  trackAnswer(v, r);
+  renderAnswer();
+  checkAch();
+}
+function renderAnswer(){
+  const {q, v, r, lifeLost, to, auto, secs} = game.last, endless = isOpen();
+  $('aNum').textContent = endless ? t('qN', game.i+1) : t('qOf', game.i+1, game.qs.length);
+  $('aScore').textContent = (game.mode === 'survival' ? hearts() + '  ' : '') + t('pts', total());
+  $('aPts').textContent = '+' + r.pts; $('aPts').style.color = color(r.pts);
+  $('aVerdict').textContent = to ? t('timeUp') : verdict(r) + (auto ? t('autoSub') : secs != null ? t('inTime', secs) : '');
+  $('aLife').textContent = lifeLost ? t('lifeLost', game.lives) : '';
+  $('aLife').classList.toggle('hidden', !lifeLost);
+  const rv = game.last.rev, rvKey = {added:'revAdded', progress:'revProgress', mastered:'revMastered', again:'revAgain'}[rv];
+  $('aRev').textContent = rvKey ? t(rvKey) : '';
+  $('aRev').className = 'revnote' + (rvKey ? '' : ' hidden') + (rv === 'progress' || rv === 'mastered' ? ' ok' : '');
+  $('aGuess').textContent = to ? '–' : fmt(v) + ' ' + L(q).unit;
+  $('aTrue').textContent = fmt(q.answer) + ' ' + L(q).unit;
+  $('aNote').textContent = L(q).note; $('aNote').classList.toggle('hidden', !L(q).note);
+  drawScale(to ? null : v, q.answer);
+  const last = game.mode === 'survival' ? game.lives <= 0 : game.mode === 'endless' ? false : game.i+1 >= game.qs.length;
+  $('bNext').textContent = last ? t('toResult') : t('next');
+  $('bStop').textContent = game.mode === 'survival' ? t('quitSurvival') : t('stop');
+  $('bStop').classList.toggle('hidden', !endless || last);
+  show('vA'); $('bNext').focus();
+}
+function drawScale(g, a){
+  const pos = x => 50 + Math.max(-2, Math.min(2, Math.log10(x/a))) * 25;
+  $('scale').innerHTML = `<div class="bar"></div>
+    <span class="lbl" style="left:0%">÷100</span><span class="lbl" style="left:25%">÷10</span>
+    <span class="lbl" style="left:75%">×10</span><span class="lbl" style="left:100%">×100</span>
+    <div class="dot t" style="left:50%"></div>${g == null ? '' : `<div class="dot g" style="left:${pos(g)}%"></div>`}`;
+}
+function next(){
+  if(isOpen()){
+    if(game.mode === 'survival' && game.lives <= 0) return finish();
+    game.i++; fillEndless(); return ask();
+  }
+  game.i++; game.i < game.qs.length ? ask() : finish();
+}
+function quit(){
+  if(isOpen() && game.results.length) return finish();
+  settleOpenGame();
+  game = null; home();
+}
+
+/* ── Ende ── */
+const STATS0 = {games:0, sum:0, best:0, streak:0, last:''};
+const fin = x => Number.isFinite(x) ? x : 0;
+function loadStats(){
+  const st = store.get('stats', STATS0);
+  for(const k of ['games','sum','best','streak']) st[k] = fin(st[k]);
+  return st;
+}
+// Wertet ein Spiel genau einmal in der Gesamtstatistik
+function commitStats(g){
+  const res = g.results || [], n = res.length;
+  if(!n) return {};
+  const tot = res.reduce((s,r)=>s+r.pts,0), out = {};
+  const st = loadStats();
+  st.games++; st.sum += tot / n;
+  if(g.mode !== 'endless') st.best = Math.max(st.best, Math.round(tot / n));
+  if(g.mode === 'daily'){
+    const d = store.get('daily', {}); d[g.key] = res; store.set('daily', d);
+    const yk = dkey(new Date(Date.now()-864e5));
+    if(st.last !== g.key){ st.streak = st.last === yk ? st.streak + 1 : 1; st.last = g.key; }
+    store.set('dailyProg', null);
+  } else store.set('active', null);
+  if(g.mode === 'blitz'){
+    const bz = store.get('blitz', {best:0, games:0});
+    bz.games = fin(bz.games) + 1;
+    bz.n = fin(bz.n) + n; bz.to = fin(bz.to) + res.filter(r => r.to).length;
+    bz.secs = fin(bz.secs) + res.reduce((a, r) => a + (r.s != null ? r.s : 0), 0);
+    out.prevBest = fin(bz.best);
+    if(tot > fin(bz.best)){ bz.best = tot; if(out.prevBest) out.record = true; }
+    store.set('blitz', bz);
+  }
+  if(g.mode === 'survival'){
+    const en = store.get('endless', {best:0, bestN:0, games:0});
+    en.games = fin(en.games) + 1;
+    if(tot > fin(en.best)){ en.best = tot; en.bestN = n; out.record = true; }
+    out.prevBest = en.best;
+    store.set('endless', en);
+  }
+  store.set('stats', st);
+  const pr = loadProg();
+  pr.bestStreak = Math.max(pr.bestStreak, st.streak);
+  if((g.mode === 'round' || g.mode === 'daily') && n >= 5 && res.every(r => r.pts >= 75)) pr.perfect++;
+  if(g.mode === 'blitz'){
+    pr.blitzBest = Math.max(pr.blitzBest, tot);
+    if(n >= BLITZ_N){ pr.blitzGames++; if(res.every(r => !r.to)) pr.blitzClean++; }
+  }
+  saveProg(pr);
+  return out;
+}
+function finish(){
+  if(game.done) return renderEnd();
+  Object.assign(game, commitStats(game));
+  game.done = true;
+  renderEnd();
+  checkAch();
+}
+// Spielstand nach jeder Antwort sichern (überlebt Neuladen und Tabwechsel)
+function saveActive(){
+  if(!game || game.done) return;
+  if(game.mode === 'daily') store.set('dailyProg', {key: game.key, results: game.results});
+  else store.set('active', {mode: game.mode, results: game.results});
+}
+// Ein angefangenes Spiel (nicht Tagesrätsel) zählen, bevor ein neues beginnt
+function settleOpenGame(){
+  if(game && !game.done && game.mode !== 'daily' && game.results.length){ commitStats(game); game.done = true; }
+}
+// Beim Start: Spiele werten, die beim letzten Mal nicht beendet wurden
+function recoverOpenGames(){
+  const a = store.get('active', null);
+  if(a && Array.isArray(a.results) && a.results.length) commitStats({mode: a.mode, results: a.results});
+  store.set('active', null);
+  const dp = store.get('dailyProg', null);
+  if(dp && dp.key !== today() && Array.isArray(dp.results) && dp.results.length){
+    commitStats({mode: 'round', results: dp.results}); store.set('dailyProg', null);
+  }
+  const st = store.get('stats', null);
+  if(st) store.set('stats', loadStats());
+}
+function renderEnd(){
+  const n = game.results.length, tot = total(), pct = tot / (n*100);
+  $('eStats').innerHTML = ''; $('eListH').classList.add('hidden');
+  if(game.mode === 'survival'){
+    $('eTitle').textContent = t('pts', tot);
+    $('eSub').textContent = t('gameOver', n) + (game.record ? t('newRecord') : t('record', game.prevBest));
+  } else if(game.mode === 'endless'){
+    $('eTitle').textContent = t('pts', tot);
+    $('eSub').textContent = t('sessionSub', n, Math.round(tot/n));
+    $('eStats').innerHTML = sessionStats();
+    $('eListH').textContent = t('yourAnswers'); $('eListH').classList.remove('hidden');
+  } else {
+    if(game.mode === 'blitz') $('eStats').innerHTML = blitzRoundStats();
+    $('eTitle').textContent = t('outOf', tot, n*100);
+    $('eSub').textContent = (game.already ? t('already') : '') + (pct >= .8 ? t('r80') : pct >= .6 ? t('r60') : pct >= .4 ? t('r40') : t('r0')) + (game.mode === 'review' ? t('revEnd', game.mastered || 0, revDeck().length) : '')
+      + (game.mode === 'blitz' ? t('blitzEnd', game.results.reduce((a, r) => a + (r.s || 0), 0) / n, game.results.filter(r => r.to).length)
+         + (game.record ? t('newRecord') : game.prevBest ? t('record', game.prevBest) : '') : '');
+  }
+  $('eList').innerHTML = game.results.map(r => {
+    const q = Q[r.id];
+    return `<li><span>${L(q).text}<br><small>${r.to ? t('timeUpShort') : `${t('you')}: ${fmt(r.guess)}`} · ${t('right')}: ${fmt(q.answer)} ${L(q).unit}${r.s != null && !r.to ? ' · ' + t('secs', r.s) : ''}</small></span><b style="color:${color(r.pts)}">${r.pts}</b></li>`;
+  }).join('');
+  $('bShare').textContent = t('share');
+  $('bAgain').textContent = game.mode === 'daily' ? t('startFree') : t('again');
+  show('vEnd');
+}
+function share(){
+  const sq = p => p >= 75 ? '🟩' : p >= 40 ? '🟨' : '🟥';
+  const head = game.mode === 'daily' ? `${t('name')} ${game.key}: ${total()}/${game.qs.length*100}`
+    : isOpen() ? `${t('name')} ${game.mode === 'survival' ? '❤️' : '∞'}: ${t('pts', total())} (${t('nQ', game.results.length)})`
+    : game.mode === 'blitz' ? `${t('name')} ⚡: ${total()}/${game.results.length*100}`
+    : `${t('name')}: ${total()}/${game.results.length*100}`;
+  const txt = `${head}\n${game.results.map(r=>sq(r.pts)).join('')}\n${location.href.split('#')[0]}`;
+  if(navigator.share) navigator.share({text:txt}).catch(()=>{});
+  else navigator.clipboard?.writeText(txt).then(() => { $('bShare').textContent = t('copied'); setTimeout(()=>$('bShare').textContent=t('share'),1500); });
+}
+
+function sessionStats(){
+  const res = game.results.map(r => ({...r, q: Q[r.id], s: score(r.guess, Q[r.id].answer)}));
+  const n = res.length, by = {};
+  res.forEach(r => { const b = by[r.q.cat] || (by[r.q.cat] = {n:0, sum:0}); b.n++; b.sum += r.pts; });
+  const data = cats.map(cat => ({cat, avg: by[cat] ? Math.round(by[cat].sum / by[cat].n) : null}));
+  const played = data.filter(d => d.avg != null).sort((a,b) => b.avg - a.avg);
+  const close = res.filter(r => r.s.factor <= 2).length, hits = res.filter(r => r.s.factor < 1.05).length;
+  const hi = res.filter(r => r.s.high).length / n;
+  const tend = Math.abs(hi - .5) < .1 ? t('balanced') : hi > .5 ? t('tooHigh', Math.round(hi*100)) : t('tooLow', Math.round((1-hi)*100));
+  const best = res.reduce((a,b) => b.s.factor < a.s.factor ? b : a), worst = res.reduce((a,b) => b.s.factor > a.s.factor ? b : a);
+  const line = r => `${L(r.q).text}<br><small style="text-transform:none;letter-spacing:0">${t('you')}: ${fmt(r.guess)} · ${t('right')}: ${fmt(r.q.answer)} ${L(r.q).unit} · <b style="color:${color(r.pts)}">${r.pts}</b></small>`;
+  let h = `<div class="insight">
+      <div><small>${t('avgAll')}</small><strong>${t('nP', Math.round(game.results.reduce((s,r)=>s+r.pts,0)/n))}</strong></div>
+      <div><small>${t('answered')}</small><strong>${t('nQ', n)}</strong></div>
+      <div><small>${t('within2')}</small><strong>${Math.round(close/n*100)} %</strong></div>
+      <div><small>${t('hits')}</small><strong>${hits}</strong></div>`;
+  if(played.length > 1) h += `<div><small>${t('strongest')}</small><strong>${catName(played[0].cat)} · ${played[0].avg}</strong></div>
+      <div><small>${t('weakest')}</small><strong>${catName(played.at(-1).cat)} · ${played.at(-1).avg}</strong></div>`;
+  h += `</div><p class="note">${t('tendency')}: ${tend}.</p>`;
+  if(n > 1) h += `<div class="best-worst"><div><small>${t('bestAns')}</small>${line(best)}</div><div><small>${t('worstAns')}</small>${line(worst)}</div></div>`;
+  h += `<h3>${t('sessionCats')}</h3>` + radar(data);
+  return h;
+}
+
+/* ── Blitz-Auswertung ── */
+function barChart(items, opt){
+  // items: [{label, h (0..1), col, top, sub}]
+  const n = items.length, W = 300, l = 6, r = 294, top = 18, hMax = 100, yb = top + hMax, bw = (r - l) / n, gap = Math.min(10, bw * .25);
+  let s = `<svg class="dist" viewBox="0 0 ${W} ${yb + (opt.sub ? 34 : 22)}" role="img">`;
+  [.5, 1].forEach(f => s += `<line x1="${l}" x2="${r}" y1="${yb - f*hMax}" y2="${yb - f*hMax}" stroke="var(--line)" stroke-dasharray="2 3"/>`);
+  if(opt.max) s += `<text x="${r}" y="${top - 5}" font-size="9" fill="var(--muted)" text-anchor="end">${opt.max}</text>`;
+  items.forEach((it, i) => {
+    const x = l + i*bw + gap/2, w = bw - gap, h = Math.max(it.h > 0 ? 2 : 0, it.h * hMax), cx = x + w/2;
+    if(it.h != null) s += `<rect x="${x.toFixed(1)}" y="${(yb - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${it.col}" opacity="${it.dim ? .45 : .9}"/>`;
+    if(it.top != null) s += `<text x="${cx.toFixed(1)}" y="${(yb - h - 4).toFixed(1)}" font-size="10" font-weight="700" fill="var(--ink)" text-anchor="middle">${it.top}</text>`;
+    s += `<text x="${cx.toFixed(1)}" y="${yb + 13}" font-size="${n > 8 ? 9 : 10}" fill="var(--muted)" text-anchor="middle">${it.label}</text>`;
+    if(opt.sub && it.sub != null) s += `<text x="${cx.toFixed(1)}" y="${yb + 26}" font-size="8.5" fill="var(--muted)" text-anchor="middle">${it.sub}</text>`;
+  });
+  return s + `<line x1="${l}" x2="${r}" y1="${yb}" y2="${yb}" stroke="var(--muted)" stroke-width=".8"/></svg>`;
+}
+function blitzRoundStats(){
+  const res = game.results.map(r => ({...r, q: Q[r.id]})), n = res.length;
+  const inT = res.filter(r => !r.to && r.s != null), sc = res.map(r => r.s ?? 0);
+  const maxS = Math.max(settings.blitzSec, ...sc, 1);
+  const close = res.filter(r => !r.to && score(r.guess, r.q.answer).factor <= 2).length;
+  const fastest = inT.length ? inT.reduce((a, b) => b.s < a.s ? b : a) : null;
+  let h = `<div class="insight">
+      <div><small>${t('avgTime')}</small><strong>${t('secs', sc.reduce((a,b)=>a+b,0) / n)}</strong></div>
+      <div><small>${t('fastest')}</small><strong>${fastest ? t('secs', fastest.s) : '–'}</strong>${fastest ? `<small style="text-transform:none;letter-spacing:0">${t('nP', fastest.pts)}</small>` : ''}</div>
+      <div><small>${t('within2')}</small><strong>${Math.round(close / n * 100)} %</strong></div>
+      <div><small>${t('timeouts')}</small><strong>${res.filter(r => r.to).length} / ${n}</strong></div>
+    </div>`;
+  h += `<div class="chart-t">${t('roundChart')}</div>` + barChart(res.map((r, i) => ({
+    label: i + 1, h: (r.s ?? maxS) / maxS, col: r.to ? 'var(--bad)' : color(r.pts), dim: r.to, top: r.to ? '⏱' : r.pts
+  })), {max: t('secs', maxS)});
+  return h + `<p class="legend">${t('roundLegend')}</p>`;
+}
+function precision(L){
+  const n = L.length; if(!n) return null;
+  const abs = L.map(x => Math.abs(x.e)).sort((a, b) => a - b), med = n % 2 ? abs[(n-1)/2] : (abs[n/2-1] + abs[n/2]) / 2;
+  const mean = L.reduce((a, x) => a + x.e, 0) / n;
+  return {n, avg: L.reduce((a, x) => a + x.p, 0) / n, w2: L.filter(x => Math.abs(x.e) <= Math.log10(2) + 1e-9).length / n, med, mean};
+}
+const TBUCKETS = [0, 2, 4, 6, 8, 10, 15, 20, 31];
+function blitzStatsHtml(){
+  const bz = store.get('blitz', {best:0, games:0}), log = store.get('log', []);
+  const B = log.filter(x => x.b != null), N = log.filter(x => x.b == null);
+  if(!fin(bz.games) && !B.length) return '';
+  const nAns = fin(bz.n);
+  let h = `<h3>${t('blitz')}</h3><div class="insight">
+      <div><small>${t('rounds')}</small><strong>${fin(bz.games)}</strong></div>
+      <div><small>${t('bRecord')}</small><strong>${bz.best ? t('nP', bz.best) : '–'}</strong></div>
+      <div><small>${t('avgTime')}</small><strong>${nAns ? t('secs', fin(bz.secs) / nAns) : '–'}</strong></div>
+      <div><small>${t('timeouts')}</small><strong>${nAns ? Math.round(fin(bz.to) / nAns * 100) + ' %' : '–'}</strong></div>
+    </div>`;
+  if(!B.length) return h;
+  const pb = precision(B), pn = precision(N);
+  const cell = (v, o, better, fmtv) => {
+    if(o == null) return `<td>${fmtv(v)}</td>`;
+    const cls = Math.abs(v - o) < 1e-9 ? '' : better(v, o) ? 'up' : 'down';
+    return `<td><b class="${cls}">${fmtv(v)}</b></td>`;
+  };
+  const tend = p => Math.abs(p.mean) < .05 ? t('balanced') : p.mean > 0 ? t('fxHigh', fxNum(p.mean)) : t('fxLow', fxNum(p.mean));
+  h += `<div class="chart-t">${t('precTitle')}</div><table class="cmptbl"><thead><tr><th></th><th>${t('withClock')}</th><th>${t('noClock')}</th></tr></thead><tbody>
+      <tr><td>${t('avgAll')}</td>${cell(pb.avg, pn && pn.avg, (a,b)=>a>b, v=>Math.round(v))}<td>${pn ? Math.round(pn.avg) : '–'}</td></tr>
+      <tr><td>${t('within2')}</td>${cell(pb.w2, pn && pn.w2, (a,b)=>a>b, v=>Math.round(v*100)+' %')}<td>${pn ? Math.round(pn.w2*100)+' %' : '–'}</td></tr>
+      <tr><td>${t('typDev')}</td>${cell(pb.med, pn && pn.med, (a,b)=>a<b, v=>t('fx', fxNum(v)))}<td>${pn ? t('fx', fxNum(pn.med)) : '–'}</td></tr>
+      <tr><td>${t('bias')}</td><td>${tend(pb)}</td><td>${pn ? tend(pn) : '–'}</td></tr>
+      <tr><td>${t('answered')}</td><td>${pb.n}</td><td>${pn ? pn.n : 0}</td></tr>
+    </tbody></table>`;
+  if(pn && pn.n >= 5 && pb.n >= 5){
+    const d = Math.round(pb.avg - pn.avg);
+    h += `<p class="note">${Math.abs(d) < 2 ? t('precSame') : d < 0 ? t('precWorse', -d) : t('precBetter', d)}</p>`;
+  }
+  const items = [];
+  for(let i = 0; i < TBUCKETS.length - 1; i++){
+    const lo = TBUCKETS[i], hi = TBUCKETS[i+1], xs = B.filter(x => x.b >= lo && x.b < hi);
+    if(hi > Math.max(...B.map(x => x.b)) + 2 && !xs.length) continue;
+    const avg = xs.length ? xs.reduce((a, x) => a + x.p, 0) / xs.length : null;
+    items.push({label: hi > 30 ? `${lo}+` : `${lo}–${hi}`, h: avg == null ? null : avg / 100, col: avg == null ? 'var(--line)' : color(avg), top: avg == null ? '' : Math.round(avg), sub: xs.length ? '×' + xs.length : ''});
+  }
+  h += `<div class="chart-t">${t('timeChart')}</div>` + barChart(items, {sub: true, max: 100});
+  return h + `<p class="legend">${t('timeLegend')}</p>`;
+}
+
+/* ── Startseite ── */
+function home(){
+  const st = loadStats();
+  const en = store.get('endless', {best:0});
+  $('tiles').innerHTML = `<div><strong>${st.games||0}</strong><small>${t('games')}</small></div>
+    <div><strong>${st.games ? Math.round(st.sum/st.games) + '%' : '–'}</strong><small>${t('avg')}</small></div>
+    <div><strong>${st.streak||0}🔥</strong><small>${t('streak')}</small></div>`;
+  const done = store.get('daily', {})[today()];
+  $('bDaily').textContent = done ? t('dailyDone') : t('daily');
+  $('bRound').textContent = t('free', settings.roundLen);
+  $('bEndless').innerHTML = `${t('endless')}<span class="sub">${t('endlessSub')}</span>`;
+  $('bSurvival').innerHTML = `${t('survival')}<span class="sub">${t('survivalSub', en.best)}</span>`;
+  $('bBlitz').innerHTML = `${t('blitz')}<span class="sub">${t('blitzSub', settings.blitzSec, fin(store.get('blitz', {best:0}).best))}</span>`;
+  const dn = revDeck().length;
+  $('bReview').innerHTML = `${t('review')}<span class="sub">${t('reviewSub', dn)}</span>`;
+  $('bReview').disabled = !dn;
+  $('howText').innerHTML = t('howText');
+  show('vStart');
+}
+
+/* ── Statistik ── */
+function radar(data){
+  const n = data.length, cx = 200, cy = 205, R = 135;
+  const pt = (i, r) => { const a = -Math.PI/2 + 2*Math.PI*i/n; return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; };
+  const pts = f => data.map((d,i) => pt(i, f(d)).map(v=>v.toFixed(1)).join(',')).join(' ');
+  let s = `<svg class="radar" viewBox="-75 0 550 420" role="img">`;
+  [.25,.5,.75,1].forEach(f => s += `<polygon class="ring${f===1?' outer':''}" points="${pts(()=>R*f)}"/>`);
+  data.forEach((_,i) => { const [x,y] = pt(i,R); s += `<line class="spoke" x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; });
+  [25,50,75,100].forEach(v => s += `<text class="tick" x="${cx+4}" y="${(cy - R*v/100 + 11).toFixed(1)}">${v}</text>`);
+  s += `<polygon class="area" points="${pts(d => R*(d.avg??0)/100)}"/>`;
+  data.forEach((d,i) => { if(d.avg != null){ const [x,y] = pt(i, R*d.avg/100); s += `<circle class="pt rhit" data-cat="${d.cat}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6"/>`; } });
+  data.forEach((d,i) => {
+    const a = -Math.PI/2 + 2*Math.PI*i/n, [x,y] = pt(i, R+20), c = Math.cos(a);
+    const anchor = c > .12 ? 'start' : c < -.12 ? 'end' : 'middle';
+    const dy = Math.sin(a) < -.5 ? -14 : Math.sin(a) > .5 ? 12 : 0;
+    const hx = anchor === 'start' ? x + 40 : anchor === 'end' ? x - 40 : x;
+    s += `<g class="rhit${d.cat === selCat ? ' sel' : ''}" data-cat="${d.cat}"><rect x="${(hx-50).toFixed(1)}" y="${(y+dy-24).toFixed(1)}" width="100" height="50" fill="transparent"/>`+
+         `<text class="lbl" x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}" text-anchor="${anchor}">${catName(d.cat)}`+
+         `<tspan class="val" x="${x.toFixed(1)}" dy="19">${d.avg ?? '–'}</tspan></text></g>`;
+  });
+  return s + '</svg>';
+}
+function showStats(){
+  const cs = store.get('cats', {});
+  const data = cats.map(cat => { const c = cs[cat]; return {cat, c, avg: c && c.n ? Math.round(c.sum/c.n) : null}; });
+  const played = data.filter(d => d.avg != null);
+  const st = loadStats();
+  const en = store.get('endless', {best:0, bestN:0});
+  const overall = `<h3>${t('overall')}</h3><div class="insight">
+      <div><small>${t('played')}</small><strong>${st.games||0}</strong></div>
+      <div><small>${t('bestRound')}</small><strong>${st.best ? st.best + ' %' : '–'}</strong></div>
+      <div><small>${t('streak')}</small><strong>${st.streak||0} 🔥</strong></div>
+      <div><small>${t('survivalRec')}</small><strong>${en.best ? t('nP', en.best) : '–'}</strong>${en.best ? `<small style="text-transform:none;letter-spacing:0">${t('endlessRecQ', en.bestN)}</small>` : ''}</div>
+    </div>`;
+  let html = radar(data) + (played.length ? `<p class="hint">${t('detailHint')}</p>` : '') + (selCat ? catDetail(selCat) : '');
+  if(!played.length){
+    html += `<p class="empty">${t('noData')}</p>`;
+  } else {
+    const sorted = played.slice().sort((a,b) => b.avg - a.avg);
+    const sum = k => played.reduce((s,d)=>s+d.c[k],0);
+    const N = sum('n'), S = sum('sum'), H = sum('hits'), C = sum('close'), HI = sum('high');
+    const tend = Math.abs(HI/N - .5) < .1 ? t('balanced') : HI/N > .5 ? t('tooHigh', Math.round(HI/N*100)) : t('tooLow', Math.round((1-HI/N)*100));
+    html += `<div class="insight">
+        <div><small>${t('strongest')}</small><strong>${catName(sorted[0].cat)} · ${sorted[0].avg}</strong></div>
+        <div><small>${t('weakest')}</small><strong>${catName(sorted.at(-1).cat)} · ${sorted.at(-1).avg}</strong></div>
+        <div><small>${t('avgAll')}</small><strong>${t('nP', Math.round(S/N))}</strong></div>
+        <div><small>${t('answered')}</small><strong>${t('nQ', N)}</strong></div>
+        <div><small>${t('within2')}</small><strong>${Math.round(C/N*100)} %</strong></div>
+        <div><small>${t('hits')}</small><strong>${H}</strong></div>
+      </div>
+      <p class="note">${t('tendency')}: ${tend}.</p>
+      <table class="cattbl">
+        <thead><tr><th>${t('category')}</th><th class="n">${t('questions')}</th><th class="n">Ø</th><th class="n">${t('best')}</th></tr></thead>
+        <tbody>${data.slice().sort((a,b)=>(b.avg??-1)-(a.avg??-1)).map(d => {
+          const totalQ = Q.filter(q=>q.cat===d.cat).length;
+          return `<tr data-cat="${d.cat}" class="${d.cat === selCat ? 'sel' : ''}"><td>${catName(d.cat)}<span class="chev">›</span><div class="meter"><i style="width:${d.avg??0}%;background:${color(d.avg??0)}"></i></div></td>
+            <td class="n">${d.c ? d.c.n : 0}<small style="color:var(--muted)"> / ${totalQ}</small></td>
+            <td class="n"><b>${d.avg ?? '–'}</b></td><td class="n">${d.c ? d.c.best : '–'}</td></tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  }
+  $('statsBody').innerHTML = html + overall + blitzStatsHtml();
+  $('statsBody').querySelectorAll('[data-cat]').forEach(el => el.onclick = () => openDetail(el.dataset.cat));
+  $('statsBody').querySelectorAll('.catchips button').forEach(b => b.onclick = () => openDetail(b.dataset.c));
+  const cl = $('detailClose'); if(cl) cl.onclick = () => { selCat = null; const y = scrollY; showStats(); scrollTo(0, y); };
+  show('vStats'); setTab('stats');
+}
+function openDetail(cat){
+  selCat = cat; showStats();
+  const d = $('detail'); if(d) d.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ── Einzelne Schätzungen & Verteilung ── */
+let selCat = null;
+const LOG_MAX = 5000;
+function logAnswer(cat, guess, answer, pts, id, secs){
+  const L = store.get('log', []), x = {c: cat, e: Math.round(Math.log10(guess/answer)*1000)/1000, p: pts, i: id};
+  if(secs != null) x.b = Math.round(secs * 10) / 10;
+  L.push(x);
+  if(L.length > LOG_MAX) L.splice(0, L.length - LOG_MAX);
+  store.set('log', L);
+}
+function backfillLog(){
+  if(store.get('logInit', false)) return;
+  const L = store.get('log', []), d = store.get('daily', {});
+  Object.keys(d).sort().forEach(k => (d[k]||[]).forEach(r => { const q = Q[r.id]; if(q && r.guess > 0) L.unshift({c:q.cat, e: Math.round(Math.log10(r.guess/q.answer)*1000)/1000, p:r.pts}); }));
+  store.set('log', L.slice(-LOG_MAX)); store.set('logInit', true);
+}
+const fxNum = e => nf(2).format(10 ** Math.abs(e));
+function catDetail(cat){
+  const all = store.get('log', []), L = cat === '*' ? all : all.filter(x => x.c === cat);
+  const name = cat === '*' ? t('allShort') : catName(cat);
+  const counts = {}; all.forEach(x => counts[x.c] = (counts[x.c]||0) + 1);
+  const chips = `<div class="catchips"><button data-c="*" class="${cat==='*'?'on':''}">${t('allShort')} · ${all.length}</button>` +
+    cats.filter(c => counts[c]).map(c => `<button data-c="${c}" class="${c===cat?'on':''}">${catName(c)} · ${counts[c]}</button>`).join('') + '</div>';
+  let h = `<div class="detail" id="detail"><div class="detail-head"><h3>${name}</h3><span><small>${t('nEst', L.length)}</small> <button id="detailClose" aria-label="${t('close')}">✕</button></span></div>${chips}`;
+  if(!L.length) return h + `<p class="empty">${t('noDetail')}</p></div>`;
+  const es = L.map(x => x.e), n = es.length;
+  const mean = es.reduce((a,b)=>a+b,0)/n;
+  const sd = Math.sqrt(es.reduce((a,b)=>a+(b-mean)**2,0)/n);
+  const abs = es.map(Math.abs).sort((a,b)=>a-b), med = n % 2 ? abs[(n-1)/2] : (abs[n/2-1]+abs[n/2])/2;
+  const w2 = es.filter(e => Math.abs(e) <= Math.log10(2)+1e-9).length;
+  const biasTxt = Math.abs(mean) < 0.05 ? t('balanced') : mean > 0 ? t('fxHigh', fxNum(mean)) : t('fxLow', fxNum(mean));
+  h += `<div class="insight">
+      <div><small>${t('typDev')}</small><strong>${t('fx', fxNum(med))}</strong></div>
+      <div><small>${t('spread')}</small><strong>${n > 1 ? '× ÷ ' + fxNum(sd) : '–'}</strong></div>
+      <div><small>${t('bias')}</small><strong>${biasTxt}</strong></div>
+      <div><small>${t('within2')}</small><strong>${Math.round(w2/n*100)} %</strong></div>
+    </div>`;
+  const sp = axisSpan(es);
+  h += `<div class="chart-t">${t('dotTitle')}</div>` + dotPlot(es, mean, sd, sp);
+  h += `<div class="chart-t">${t('histTitle')}</div>` + histogram(es, sp);
+  return h + `<p class="legend">${t('legend')}</p></div>`;
+}
+// Gemeinsame Achse: log10-Abweichung; Bereich passt sich den Daten an (±1, ±1,5 oder ±2)
+const AX = {l: 14, r: 286};
+const ax = (e, sp) => AX.l + (Math.max(-sp, Math.min(sp, e)) + sp) / (2*sp) * (AX.r - AX.l);
+const fmtF = e => (e < 0 ? '÷' : '×') + nf(2).format(10 ** Math.abs(e));
+function axisSpan(es){
+  const a = es.map(Math.abs).sort((x,y)=>x-y), p95 = a[Math.floor(.95*(a.length-1))] || 0;
+  return p95 <= .9 ? 1 : p95 <= 1.4 ? 1.5 : 2;
+}
+function axisTicks(sp){
+  const l2 = Math.log10(2), l3 = Math.log10(3), l5 = Math.log10(5), c = t('correctLbl');
+  if(sp === 1)   return [[-1,'÷10'],[-l5,'÷5'],[-l2,'÷2'],[0,c],[l2,'×2'],[l5,'×5'],[1,'×10']];
+  if(sp === 1.5) return [[-1.5,'÷30'],[-1,'÷10'],[-l3,'÷3'],[0,c],[l3,'×3'],[1,'×10'],[1.5,'×30']];
+  return [[-2,'÷100'],[-1,'÷10'],[-l2,''],[0,c],[l2,''],[1,'×10'],[2,'×100']];
+}
+function axisSvg(sp, y){
+  let s = '';
+  axisTicks(sp).forEach(([e,l]) => {
+    const x = ax(e, sp);
+    s += `<line x1="${x}" y1="${y}" x2="${x}" y2="${y+4}" stroke="var(--muted)"/>`;
+    if(l) s += `<text x="${x}" y="${y+15}" font-size="${e===0?11:10}" font-weight="${e===0?700:500}" fill="${e===0?'var(--ink)':'var(--muted)'}" text-anchor="middle">${l}</text>`;
+  });
+  return s + `<text x="${AX.l}" y="${y+28}" font-size="9" fill="var(--muted)">${t('tooLowShort')}</text><text x="${AX.r}" y="${y+28}" font-size="9" fill="var(--muted)" text-anchor="end">${t('tooHighShort')}</text>`;
+}
+const zoneCol = e => { const a = Math.abs(e); return a <= Math.log10(2)+1e-9 ? 'var(--good)' : a <= 1 ? 'var(--mid)' : 'var(--bad)'; };
+function dotPlot(es, mean, sd, sp){
+  const step = 8, buckets = {}, dots = [];
+  es.slice().sort((a,b)=>a-b).forEach(e => { const k = Math.round(ax(e, sp)/step); const lvl = buckets[k] = (buckets[k]||0) + 1; dots.push({x: k*step, lvl, e}); });
+  const maxLvl = Math.max(...Object.values(buckets)), dy = Math.min(8, 96 / maxLvl), r = Math.max(2.2, Math.min(3.6, dy/2 - .2));
+  const top = 34, base = top + 6 + Math.min(96, maxLvl*dy), H = base + 34, l2 = Math.log10(2);
+  const X = e => ax(e, sp);
+  let s = `<svg class="dist" viewBox="0 0 300 ${H}" role="img">`;
+  s += `<rect x="${AX.l}" y="${top}" width="${AX.r-AX.l}" height="${base-top}" rx="6" fill="var(--bad)" opacity=".07"/>`;
+  s += `<rect x="${X(-1)}" y="${top}" width="${X(1)-X(-1)}" height="${base-top}" fill="var(--mid)" opacity=".10"/>`;
+  s += `<rect x="${X(-l2)}" y="${top}" width="${X(l2)-X(-l2)}" height="${base-top}" fill="var(--good)" opacity=".14"/>`;
+  s += `<line x1="${X(0)}" y1="${top-4}" x2="${X(0)}" y2="${base+4}" stroke="var(--ink)" stroke-width="1.5"/>`;
+  dots.forEach(d => s += `<circle cx="${d.x.toFixed(1)}" cy="${(base - (d.lvl-.5)*dy).toFixed(1)}" r="${r.toFixed(1)}" fill="${zoneCol(d.e)}" stroke="var(--card)" stroke-width=".8"/>`);
+  // Durchschnitt (Kreis + Beschriftung) und Streuung (Balken ±1 SD)
+  if(es.length > 1){
+    const x1 = X(mean - sd), x2 = X(mean + sd), xm = X(mean), yb = 21;
+    s += `<line x1="${xm}" y1="${yb+6}" x2="${xm}" y2="${base}" stroke="var(--accent)" stroke-width="1.5" opacity=".5"/>`;
+    s += `<line x1="${x1}" y1="${yb}" x2="${x2}" y2="${yb}" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>`+
+         `<line x1="${x1}" y1="${yb-5}" x2="${x1}" y2="${yb+5}" stroke="var(--accent)" stroke-width="2"/><line x1="${x2}" y1="${yb-5}" x2="${x2}" y2="${yb+5}" stroke="var(--accent)" stroke-width="2"/>`;
+    s += `<circle cx="${xm}" cy="${yb}" r="5.5" fill="var(--card)" stroke="var(--accent)" stroke-width="3"/>`;
+    const lx = Math.max(AX.l + 22, Math.min(AX.r - 22, xm));
+    s += `<text x="${lx}" y="9" font-size="10" font-weight="700" fill="var(--accent)" text-anchor="middle">Ø ${fmtF(mean)}</text>`;
+  }
+  return s + axisSvg(sp, base + 4) + '</svg>';
+}
+function histogram(es, sp){
+  const n = es.length;
+  let k = Math.round(Math.sqrt(n) * 1.6); if(k % 2 === 0) k++; k = Math.max(5, Math.min(41, k));
+  const w = 2*sp / k, bins = Array.from({length:k}, (_,i) => ({lo: -sp + i*w, hi: -sp + (i+1)*w, n: 0}));
+  es.forEach(e => { const c = Math.max(-sp, Math.min(sp, e)); bins[Math.min(k-1, Math.floor((c + sp) / w))].n++; });
+  const max = Math.max(...bins.map(b => b.n), 1), top = 16, hMax = 96, yb = top + hMax, gap = k > 25 ? .6 : 1.2;
+  let s = `<svg class="dist" viewBox="0 0 300 ${yb + 34}" role="img">`;
+  [.5, 1].forEach(f => s += `<line x1="${AX.l}" x2="${AX.r}" y1="${yb - f*hMax}" y2="${yb - f*hMax}" stroke="var(--line)" stroke-dasharray="2 3"/>`);
+  s += `<text x="${AX.l}" y="${top - 4}" font-size="9" fill="var(--muted)">${max}</text>`;
+  bins.forEach((b, i) => {
+    const x1 = ax(b.lo, sp) + gap, x2 = ax(b.hi, sp) - gap, h = b.n / max * hMax;
+    const lo = i === 0 ? '≤' + fmtF(-sp) : fmtF(b.lo), hi = i === k-1 ? '≥' + fmtF(sp) : fmtF(b.hi);
+    if(b.n) s += `<rect x="${x1.toFixed(1)}" y="${(yb - h).toFixed(1)}" width="${Math.max(1, x2-x1).toFixed(1)}" height="${h.toFixed(1)}" rx="${k > 25 ? 1 : 3}" fill="var(--accent)"><title>${i===0 ? lo : i===k-1 ? hi : lo + ' … ' + hi}: ${b.n}</title></rect>`;
+    if(b.n && k <= 15) s += `<text x="${((x1+x2)/2).toFixed(1)}" y="${(yb - h - 4).toFixed(1)}" font-size="9.5" font-weight="700" fill="var(--ink)" text-anchor="middle">${b.n}</text>`;
+  });
+  s += `<line x1="${ax(0, sp)}" y1="${top - 2}" x2="${ax(0, sp)}" y2="${yb}" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+  s += `<line x1="${AX.l}" x2="${AX.r}" y1="${yb}" y2="${yb}" stroke="var(--line)" stroke-width="1.5"/>`;
+  return s + axisSvg(sp, yb + 2) + '</svg>';
+}
+
+/* ── Merkzahlen ── */
+// [Schlüssel, Icon, Wert, Einheit DE, Einheit EN, Name DE, Name EN, Tipp DE, Tipp EN, [passende Fragen (Textausschnitte)]]
+const ANCH = [
+  ['earth_circ','🌍',40075,'km','km','Erdumfang','Earth’s circumference','Rund 40.000 km – der Meter war ursprünglich als 1/10.000.000 der Strecke Pol–Äquator definiert.','About 40,000 km – the metre was originally defined as 1/10,000,000 of the pole-to-equator distance.',['Erdumfang am Äquator']],
+  ['earth_d','🌐',12742,'km','km','Erddurchmesser','Earth’s diameter','Umfang ÷ π ≈ 12.700 km.','Circumference ÷ π ≈ 12,700 km.',['Wie groß ist der Durchmesser der Erde']],
+  ['moon','🌙',384400,'km','km','Entfernung zum Mond','Distance to the Moon','Etwa 30 Erddurchmesser – oder knapp 10-mal um die Erde.','About 30 Earth diameters – or almost 10 times around the Earth.',['Mond im Mittel von der Erde']],
+  ['sun','☀️',149.6e6,'km','km','Entfernung zur Sonne','Distance to the Sun','Eine Astronomische Einheit – Licht braucht gut 8 Minuten.','One astronomical unit – light takes just over 8 minutes.',['Sonne im Mittel von der Erde']],
+  ['light','⚡',299792,'km/s','km/s','Lichtgeschwindigkeit','Speed of light','Rund 300.000 km/s – in einer Sekunde 7,5-mal um die Erde.','About 300,000 km/s – 7.5 times around the Earth in one second.',['Wie schnell ist Licht im Vakuum']],
+  ['lightyear','✨',9.46e12,'km','km','Ein Lichtjahr','One light year','Lichtgeschwindigkeit × Sekunden pro Jahr ≈ 10 Billionen km.','Speed of light × seconds per year ≈ 10 trillion km.',['Kilometer sind ein Lichtjahr']],
+  ['universe','🌌',13.8e9,'Jahre','years','Alter des Universums','Age of the universe','Etwa dreimal so alt wie die Erde.','About three times as old as the Earth.',['Wie alt ist das Universum']],
+  ['earth_age','🪨',4.54e9,'Jahre','years','Alter der Erde','Age of the Earth','Rund 4,5 Milliarden Jahre – ein Drittel des Universumsalters.','About 4.5 billion years – a third of the age of the universe.',['Wie alt ist die Erde']],
+  ['earth_mass','⚖️',5.97e24,'kg','kg','Masse der Erde','Mass of the Earth','Etwa 6 × 10²⁴ kg.','About 6 × 10²⁴ kg.',['Wie schwer ist die Erde']],
+  ['world_pop','👥',8.1e9,'Menschen','people','Weltbevölkerung','World population','Rund 8 Milliarden – etwa 100-mal so viele wie in Deutschland.','About 8 billion – roughly 100 times Germany’s population.',['Menschen leben auf der Erde (2024)']],
+  ['de_pop','🏠',83.5e6,'Menschen','people','Einwohner Deutschlands','Population of Germany','Gut 80 Millionen – etwa 1 % der Weltbevölkerung.','Just over 80 million – about 1 % of the world’s population.',['Wie viele Menschen leben in Deutschland?']],
+  ['de_area','🗺️',357600,'km²','km²','Fläche Deutschlands','Area of Germany','Grob ein Quadrat von 600 × 600 km.','Roughly a 600 × 600 km square.',['Wie groß ist die Fläche Deutschlands?']],
+  ['sec_year','⏱️',31536000,'s','s','Sekunden pro Jahr','Seconds per year','Merkhilfe: π × 10⁷ Sekunden.','Handy rule: π × 10⁷ seconds.',['Wie viele Sekunden hat ein Jahr?']],
+  ['sec_day','🕐',86400,'s','s','Sekunden pro Tag','Seconds per day','24 × 60 × 60 – knapp 100.000.','24 × 60 × 60 – just under 100,000.',['Wie viele Sekunden hat ein Tag?']],
+  ['life','🎂',81,'Jahre','years','Lebenserwartung (Deutschland)','Life expectancy (Germany)','Rund 80 Jahre ≈ 30.000 Tage ≈ 2,5 Milliarden Sekunden.','About 80 years ≈ 30,000 days ≈ 2.5 billion seconds.',['Lebenserwartung bei Geburt']],
+  ['heart','❤️',100000,'Schläge','beats','Herzschläge pro Tag','Heartbeats per day','Etwa 70 pro Minute – im ganzen Leben rund 3 Milliarden.','About 70 per minute – roughly 3 billion in a lifetime.',['Herz eines Menschen pro Tag']],
+  ['sound','🔊',343,'m/s','m/s','Schallgeschwindigkeit','Speed of sound','Rund 1 km in 3 Sekunden – so schätzt man die Entfernung eines Gewitters.','About 1 km in 3 seconds – handy for judging how far away a storm is.',['Schall in Luft']],
+  ['everest','🏔️',8849,'m','m','Höhe des Mount Everest','Height of Mount Everest','Knapp 9 km – etwa die Reiseflughöhe eines Passagierflugzeugs.','Almost 9 km – about the cruising altitude of an airliner.',['Wie hoch ist der Mount Everest?']],
+  ['trench','🌊',10935,'m','m','Tiefste Stelle im Ozean','Deepest point in the ocean','Rund 11 km – der Everest hätte darin noch 2 km Wasser über sich.','About 11 km – Everest would still be under 2 km of water.',['Marianengraben']],
+  ['de_gdp','💶',4.3e12,'€','€','Bruttoinlandsprodukt Deutschlands','Germany’s GDP','Rund 4 Billionen € pro Jahr – gut 50.000 € pro Kopf.','About €4 trillion a year – just over €50,000 per person.',['Bruttoinlandsprodukt Deutschlands 2024']],
+  ['de_budget','🏛️',477e9,'€','€','Bundeshaushalt','German federal budget','Knapp eine halbe Billion € – rund ein Neuntel des BIP.','Nearly half a trillion euros – about one ninth of GDP.',['Bundeshaushalt 2024']],
+  ['cars','🚗',49.1e6,'Pkw','cars','Pkw in Deutschland','Cars in Germany','Etwa ein Auto auf 1,7 Menschen.','About one car for every 1.7 people.',['Pkw sind in Deutschland zugelassen']],
+  ['cells','🧬',3e13,'Zellen','cells','Zellen im Körper','Cells in the human body','Rund 30 Billionen – dazu etwa genauso viele Bakterien.','About 30 trillion – plus roughly as many bacteria.',['Zellen besteht der menschliche Körper']],
+  ['neurons','🧠',86e9,'Neuronen','neurons','Nervenzellen im Gehirn','Neurons in the brain','Rund 86 Milliarden – etwa 10-mal so viele wie Menschen auf der Erde.','About 86 billion – roughly 10 times the world’s population.',['Nervenzellen hat das menschliche Gehirn']],
+  ['pitch','⚽',7140,'m²','m²','Fläche eines Fußballfelds','Area of a football pitch','Rund 0,7 Hektar – beliebte Vergleichsgröße für Flächen.','About 0.7 hectares – a popular yardstick for areas.',['Fußballfeld nach FIFA-Norm']],
+  ['marathon','🏃',42195,'m','m','Marathon','Marathon','42,195 km – etwa 55.000 Schritte.','42.195 km – roughly 55,000 steps.',['Wie lang ist ein Marathon?']],
+  ['internet','📶',5.5e9,'Menschen','people','Internetnutzer weltweit','Internet users worldwide','Rund zwei Drittel der Menschheit.','About two thirds of humanity.',['nutzen weltweit das Internet']],
+  ['berlin','🐻',3.78e6,'Menschen','people','Einwohner Berlins','Population of Berlin','Knapp 4 Millionen – die größte Stadt der EU.','Almost 4 million – the largest city in the EU.',['Wie viele Menschen leben in Berlin?']],
+  ['usa','🗽',340e6,'Menschen','people','Einwohner der USA','Population of the USA','Rund 340 Millionen – etwa viermal so viele wie in Deutschland.','About 340 million – roughly four times Germany’s population.',['Wie viele Menschen leben in den USA?']],
+  ['china_india','🐉',1.4e9,'Menschen','people','Einwohner Chinas bzw. Indiens','Population of China or India','Je gut 1,4 Milliarden – zusammen über ein Drittel der Menschheit.','Just over 1.4 billion each – together more than a third of humanity.',['Wie viele Menschen leben in China?','Wie viele Menschen leben in Indien?']],
+  ['births','👶',370000,'Babys','babies','Geburten weltweit pro Tag','Births worldwide per day','Rund 4 pro Sekunde.','About 4 per second.',['Babys werden weltweit pro Tag geboren']],
+  ['lunar_month','🌕',27.3,'Tage','days','Mondumlauf','Lunar orbit','Gut 27 Tage – von Vollmond zu Vollmond dauert es 29,5 Tage.','Just over 27 days – full moon to full moon takes 29.5 days.',['Wie viele Tage braucht der Mond für einen Umlauf']],
+  ['earth_orbit','🛤️',107000,'km/h','km/h','Bahngeschwindigkeit der Erde','Earth’s orbital speed','Rund 30 km pro Sekunde – 100-mal schneller als ein Passagierflugzeug.','About 30 km per second – 100 times faster than an airliner.',['Wie schnell bewegt sich die Erde um die Sonne?']],
+  ['rotation','🔄',1670,'km/h','km/h','Erdrotation am Äquator','Earth’s rotation at the equator','Erdumfang ÷ 24 Stunden ≈ 1.670 km/h.','Circumference ÷ 24 hours ≈ 1,670 km/h.',['Wie schnell dreht sich die Erdoberfläche am Äquator?']],
+  ['brain','🧩',1400,'g','g','Gewicht des Gehirns','Weight of the brain','Etwa 1,4 kg – rund 2 % des Körpergewichts.','About 1.4 kg – roughly 2 % of body weight.',['Wie schwer ist ein menschliches Gehirn?']],
+  ['blood','🩸',5,'Liter','litres','Blut im Körper','Blood in the body','Rund 5 Liter – etwa 7 % des Körpergewichts.','About 5 litres – roughly 7 % of body weight.',['Wie viele Liter Blut hat ein Erwachsener?']],
+  ['bones','🦴',206,'Knochen','bones','Knochen eines Erwachsenen','Bones in an adult','206 – bei Babys sind es noch rund 300, viele wachsen zusammen.','206 – babies have about 300, many of which fuse.',['Wie viele Knochen hat ein erwachsener Mensch?']],
+  ['hairs','💇',100000,'Haare','hairs','Haare auf dem Kopf','Hairs on your head','Rund 100.000 – davon fallen täglich etwa 100 aus.','About 100,000 – roughly 100 fall out every day.',['Wie viele Haare hat ein Mensch auf dem Kopf?']],
+  ['rhine','🏞️',1233,'km','km','Länge des Rheins','Length of the Rhine','Gut 1.200 km – ein Drittel der Strecke Berlin–Kairo.','Just over 1,200 km.',['Wie lang ist der Rhein?']],
+  ['zugspitze','⛰️',2962,'m','m','Höhe der Zugspitze','Height of the Zugspitze','Knapp 3 km – ein Drittel des Mount Everest.','Almost 3 km – a third of Mount Everest.',['Wie hoch ist die Zugspitze?']],
+  ['freshwater','💧',2.5,'%','%','Anteil Süßwasser','Share of fresh water','Nur 2,5 % – und davon steckt der Großteil im Eis.','Only 2.5 % – and most of that is locked in ice.',['Prozent des Wassers auf der Erde ist Süßwasser']],
+  ['ocean_vol','🐋',1.335e9,'km³','km³','Wasser in den Ozeanen','Water in the oceans','Rund 1,3 Milliarden km³ – im Schnitt 3,7 km tief auf 361 Mio. km².','About 1.3 billion km³ – 3.7 km deep on average over 361 million km².',['Wie viel Wasser enthalten die Ozeane?']],
+  ['eiffel','🗼',330,'m','m','Höhe des Eiffelturms','Height of the Eiffel Tower','Rund 330 m – eine praktische Vergleichsgröße für hohe Bauwerke.','About 330 m – a handy yardstick for tall structures.',['Wie hoch ist der Eiffelturm (mit Antennen)?']],
+  ['world_gdp','💹',110e12,'US$','US$','Weltweites BIP','World GDP','Rund 110 Billionen $ pro Jahr – etwa 13.000 $ pro Kopf.','About $110 trillion a year – roughly $13,000 per person.',['weltweite Bruttoinlandsprodukt pro Jahr']],
+  ['trees','🌳',3e12,'Bäume','trees','Bäume auf der Erde','Trees on Earth','Rund 3 Billionen – etwa 370 pro Mensch.','About 3 trillion – roughly 370 per person.',['Wie viele Bäume gibt es auf der Erde?']],
+  ['milkyway','💫',2e11,'Sterne','stars','Sterne der Milchstraße','Stars in the Milky Way','100 bis 400 Milliarden – grob 25 pro Mensch.','100 to 400 billion – roughly 25 per person.',['Wie viele Sterne hat die Milchstraße']],
+  ['steps','👟',1300,'Schritte','steps','Schritte pro Kilometer','Steps per kilometre','Rund 1.300 – also etwa 75 cm pro Schritt.','About 1,300 – roughly 75 cm per step.',['Wie viele Schritte braucht ein Erwachsener für einen Kilometer?']],
+  ['paper','📄',0.1,'mm','mm','Dicke eines Blatts Papier','Thickness of a sheet of paper','0,1 mm – ein Paket mit 500 Blatt ist 5 cm hoch.','0.1 mm – a ream of 500 sheets is 5 cm thick.',['Wie dick ist ein Blatt Druckerpapier?']],
+  ['coin','🪙',7.5,'g','g','Gewicht einer 1-Euro-Münze','Weight of a 1-euro coin','7,5 g – eine praktische Referenz für kleine Gewichte.','7.5 g – a handy reference for small weights.',['Wie schwer ist eine 1-Euro-Münze?']],
+  ['un','🕊️',193,'Staaten','states','UN-Mitgliedsstaaten','UN member states','Rund 200 Staaten auf der Welt.','About 200 countries in the world.',['Mitgliedsstaaten haben die Vereinten Nationen']],
+  ['languages','💬',7000,'Sprachen','languages','Sprachen der Welt','Languages of the world','Rund 7.000 – die Hälfte davon ist vom Aussterben bedroht.','About 7,000 – half of them are endangered.',['Wie viele Sprachen werden heute auf der Welt gesprochen?']],
+  ['moon_g','🪶',16.5,'%','%','Schwerkraft auf dem Mond','Gravity on the Moon','Etwa ein Sechstel der Erdschwerkraft.','About one sixth of Earth’s gravity.',['Prozent der Erdschwerkraft herrscht auf dem Mond']],
+];
+const ANCH_IDS = ANCH.map(a => Q.filter(q => a[9].some(m => q.de.text.includes(m))).map(q => q.id));
+const ANCH_MIN = 80;
+function unlockAnchors(id, pts, silent){
+  if(pts < ANCH_MIN) return;
+  const got = store.get('anchors', {}); let changed = false;
+  ANCH.forEach((a, i) => {
+    if(got[a[0]] || !ANCH_IDS[i].includes(id)) return;
+    got[a[0]] = Date.now(); changed = true;
+    if(!silent) toastQ.push({i: a[1], n: settings.lang === 'en' ? a[6] : a[5], l: t('anchorNew'), view: 'anchors'});
+  });
+  if(changed){ store.set('anchors', got); if(!silent) nextToast(); }
+}
+
+/* ── Fehler-Stapel (Karteikarten) ── */
+const REV_BAD = 50, REV_OK = 75, REV_NEED = 2;
+function updateRev(id, pts){
+  const D = store.get('rev', {}); let st = null;
+  if(D[id]){
+    if(pts >= REV_OK){
+      D[id].s++;
+      if(D[id].s >= REV_NEED){ delete D[id]; const p = loadProg(); p.mastered++; saveProg(p); st = 'mastered'; }
+      else st = 'progress';
+    } else { D[id].s = 0; st = 'again'; }
+    if(D[id]) D[id].t = Date.now();
+  } else if(pts < REV_BAD){ D[id] = {s: 0, t: Date.now()}; st = 'added'; }
+  store.set('rev', D);
+  return st;
+}
+const revDeck = () => Object.entries(store.get('rev', {})).filter(([id]) => Q[+id])
+  .sort((a, b) => a[1].s - b[1].s || a[1].t - b[1].t).map(([id]) => Q[+id]);
+function startReview(){
+  settleOpenGame();
+  const deck = revDeck(); if(!deck.length) return home();
+  game = {mode: 'review', qs: shuffle(deck.slice(0, 10)), i: 0, results: [], mastered: 0};
+  ask();
+}
+function backfillRevAnchors(){
+  if(store.get('revInit', false)) return;
+  const d = store.get('daily', {});
+  Object.keys(d).sort().forEach(k => (d[k] || []).forEach(r => { if(Q[r.id]){ updateRev(r.id, r.pts); unlockAnchors(r.id, r.pts, true); } }));
+  store.set('revInit', true);
+}
+
+/* ── Lernen ── */
+const LESSONS = [
+ {id:'magnitude', icon:'🔟', q:'Wie viele Studierende gibt es in Deutschland?',
+  de:{title:'In Größenordnungen denken', tag:'Erst die Zehnerpotenz, dann die Details.',
+   body:['Beim Schätzen ist der größte Fehler fast nie, dass man 30 statt 40 sagt – sondern 3.000 statt 40.000. Kläre deshalb zuerst die <b>Größenordnung</b>: Sind es eher Tausende, Millionen oder Milliarden?',
+         'Die Wertung in diesem Spiel misst genau das: Liegst du um Faktor 2 daneben, bekommst du noch 78 Punkte, bei Faktor 10 nur noch 35. Die richtige Zehnerpotenz bringt dir also den Großteil der Punkte.'],
+   ex:['<b>Frage:</b> Wie viele Menschen leben in Hamburg?','Tausende? Viel zu wenig für eine Großstadt. Milliarden? Mehr als ganz Deutschland – unmöglich.','Also Millionen. Berlin hat knapp 4 Millionen, Hamburg ist kleiner: etwa 2 Millionen.','<b>Richtig:</b> 1,85 Millionen – nur Faktor 1,1 daneben.'],
+   sol:'Größenordnung zuerst: Tausende wären zu wenig, Dutzende Millionen wären mehr als ein Viertel der Bevölkerung. Grob 3 % der 83 Millionen Einwohner studieren – das sind gut 2,5 Millionen. Richtig sind rund 2,9 Millionen.'},
+  en:{title:'Think in orders of magnitude', tag:'Get the power of ten right first, then the details.',
+   body:['When estimating, the big mistake is almost never saying 30 instead of 40 – it is saying 3,000 instead of 40,000. So settle the <b>order of magnitude</b> first: thousands, millions or billions?',
+         'The scoring in this game measures exactly that: off by a factor of 2 still earns 78 points, off by 10 only 35. Getting the power of ten right earns you most of the points.'],
+   ex:['<b>Question:</b> How many people live in Hamburg?','Thousands? Far too few for a major city. Billions? More than all of Germany – impossible.','So millions. Berlin has almost 4 million and Hamburg is smaller: about 2 million.','<b>Answer:</b> 1.85 million – only 1.1× off.'],
+   sol:'Magnitude first: thousands would be too few, tens of millions would be over a quarter of the population. Roughly 3 % of Germany’s 83 million people study – just over 2.5 million. The answer is about 2.9 million.'}},
+ {id:'bounds', icon:'📏', bounds:true, q:'Wie viele Stockwerke hat der Burj Khalifa?',
+  de:{title:'Grenzen setzen', tag:'Sicher zu wenig, sicher zu viel – und dann die Mitte.',
+   body:['Wenn du keine Ahnung hast, frag dich zwei Dinge: Was ist <b>sicher zu wenig</b>? Und was ist <b>sicher zu viel</b>? Diese Grenzen findest du fast immer, auch bei völlig fremden Fragen.',
+         'Dann nimmst du die Mitte – aber nicht den Durchschnitt, sondern das <b>geometrische Mittel</b>: √(Untergrenze × Obergrenze). Zwischen 100 und 10.000 liegt also 1.000, nicht 5.050. Das passt zur Wertung, die nach Faktoren rechnet.'],
+   ex:['<b>Frage:</b> Wie hoch ist die Elbphilharmonie?','Sicher höher als 50 m – sie überragt den Hafen deutlich.','Sicher niedriger als 300 m – das wäre fast der Eiffelturm.','√(50 × 300) = √15.000 ≈ 120 m. <b>Richtig:</b> 110 m.'],
+   sol:'Sicher mehr als 100 Stockwerke – das Gebäude ist über 800 m hoch. Sicher weniger als 300 – dann wäre jedes Stockwerk samt Spitze kaum 2,7 m hoch. √(100 × 300) ≈ 170. Richtig sind 163.'},
+  en:{title:'Set bounds', tag:'Surely too low, surely too high – then take the middle.',
+   body:['If you have no idea, ask yourself two things: what is <b>surely too low</b>, and what is <b>surely too high</b>? You can almost always find these bounds, even for completely unfamiliar questions.',
+         'Then take the middle – not the ordinary average but the <b>geometric mean</b>: √(lower × upper). Between 100 and 10,000 the middle is 1,000, not 5,050. That matches the scoring, which works in factors.'],
+   ex:['<b>Question:</b> How tall is Hamburg’s Elbphilharmonie?','Surely taller than 50 m – it towers over the harbour.','Surely shorter than 300 m – that would almost be the Eiffel Tower.','√(50 × 300) = √15,000 ≈ 120 m. <b>Answer:</b> 110 m.'],
+   sol:'Surely more than 100 floors – the building is over 800 m tall. Surely fewer than 300 – each floor would then be barely 2.7 m, spire included. √(100 × 300) ≈ 170. The answer is 163.'}},
+ {id:'decompose', icon:'🧩', q:'Wie viele Pkw sind in Deutschland zugelassen?',
+  de:{title:'Zerlegen (Fermi-Methode)', tag:'Eine unmögliche Frage in kleine, lösbare Teile aufbrechen.',
+   body:['Der Physiker Enrico Fermi war berühmt dafür, scheinbar unbeantwortbare Fragen in Minuten zu schätzen. Sein Trick: Er zerlegte sie in <b>Teilfragen</b>, deren Antworten man ungefähr kennt, und multiplizierte sie.',
+         'Das Schöne daran: Jeder Teil darf grob sein. Schätzt du einen Teil zu hoch und einen anderen zu niedrig, gleichen sich die Fehler oft aus.'],
+   ex:['<b>Frage:</b> Wie oft schlägt ein Herz in einem ganzen Leben?','Puls etwa 70 pro Minute.','× 60 Minuten × 24 Stunden ≈ 100.000 pro Tag.','× 365 Tage ≈ 37 Millionen pro Jahr.','× 80 Jahre ≈ 3 Milliarden. <b>Richtig:</b> 3 Milliarden.'],
+   sol:'Zerlegen: 83 Millionen Einwohner leben in etwa 41 Millionen Haushalten. Viele Haushalte haben ein Auto, manche zwei, Großstädter oft keins – sagen wir im Schnitt gut 1,1. Das ergibt rund 45 Millionen. Richtig sind 49 Millionen.'},
+  en:{title:'Break it down (Fermi method)', tag:'Split an impossible question into small, solvable parts.',
+   body:['The physicist Enrico Fermi was famous for estimating seemingly unanswerable questions in minutes. His trick: break them into <b>sub-questions</b> whose answers you roughly know, then multiply.',
+         'The beauty of it: each part may be rough. If you guess one part too high and another too low, the errors often cancel out.'],
+   ex:['<b>Question:</b> How many times does a heart beat in a lifetime?','Pulse about 70 per minute.','× 60 minutes × 24 hours ≈ 100,000 per day.','× 365 days ≈ 37 million per year.','× 80 years ≈ 3 billion. <b>Answer:</b> 3 billion.'],
+   sol:'Break it down: Germany’s 83 million people live in about 41 million households. Many households have one car, some two, city dwellers often none – say just over 1.1 on average. That gives about 45 million. The answer is 49 million.'}},
+ {id:'anchors', icon:'📌', q:'Wie schnell bewegt sich die Erde um die Sonne?',
+  de:{title:'Von Ankerwerten aus rechnen', tag:'Bekannte Zahlen als Sprungbrett nutzen.',
+   body:['Viele Fragen lassen sich aus wenigen Zahlen herleiten, die man einmal gelernt hat: Erdumfang, Einwohnerzahlen, Sekunden pro Jahr. Solche <b>Ankerwerte</b> sind das Werkzeug guter Schätzer.',
+         'In diesem Spiel sammelst du sie unter „Erfolge → Merkzahlen“. Jede Merkzahl, die du kennst, macht Dutzende andere Fragen leichter.'],
+   ex:['<b>Frage:</b> Wie viele Sekunden lebt ein Mensch, der 80 Jahre alt wird?','Anker: Ein Jahr hat etwa π × 10⁷ ≈ 31,5 Millionen Sekunden.','× 80 ≈ 2,5 Milliarden Sekunden.','<b>Richtig:</b> 2,52 Milliarden.'],
+   sol:'Anker: Die Sonne ist 150 Millionen km entfernt. Die Erdbahn ist also ein Kreis mit dem Umfang 2π × 150 Mio. ≈ 940 Millionen km. Den schafft die Erde in einem Jahr, also in 8.760 Stunden: 940 Mio. ÷ 8.760 ≈ 107.000 km/h. Richtig: 107.000 km/h.'},
+  en:{title:'Work from anchor numbers', tag:'Use known numbers as a springboard.',
+   body:['Many questions can be derived from a handful of numbers you learn once: the Earth’s circumference, populations, seconds per year. These <b>anchor numbers</b> are the tools of good estimators.',
+         'In this game you collect them under “Awards → Anchor numbers”. Every anchor you know makes dozens of other questions easier.'],
+   ex:['<b>Question:</b> How many seconds does a person live who reaches 80?','Anchor: a year has about π × 10⁷ ≈ 31.5 million seconds.','× 80 ≈ 2.5 billion seconds.','<b>Answer:</b> 2.52 billion.'],
+   sol:'Anchor: the Sun is 150 million km away. So Earth’s orbit is a circle with a circumference of 2π × 150 million ≈ 940 million km. Earth covers it in one year, i.e. 8,760 hours: 940 million ÷ 8,760 ≈ 107,000 km/h. The answer is 107,000 km/h.'}},
+ {id:'compare', icon:'⚖️', q:'Wie groß ist die Fläche Österreichs?',
+  de:{title:'Vergleichen', tag:'Unbekanntes an Bekanntem messen.',
+   body:['Oft kennt man keine Zahl, aber einen <b>Vergleich</b>: „ungefähr so groß wie …“, „etwa ein Fünftel von …“. Verhältnisse schätzt man viel zuverlässiger als absolute Werte.',
+         'Such dir eine Referenz, die du kennst, und frag nur noch: Wie viel größer oder kleiner ist das Gesuchte? Das funktioniert für Flächen, Höhen, Einwohner und Geldbeträge gleichermaßen.'],
+   ex:['<b>Frage:</b> Wie groß ist die Fläche Bayerns?','Referenz: Deutschland hat rund 357.000 km².','Bayern ist das größte Bundesland, etwa ein Fünftel der Karte.','357.000 ÷ 5 ≈ 71.000 km². <b>Richtig:</b> 70.550 km².'],
+   sol:'Referenz: Bayern mit rund 70.000 km². Österreich ist auf der Karte etwas größer als Bayern – grob 20 % mehr. Das ergibt etwa 84.000 km². Richtig: 83.879 km².'},
+  en:{title:'Compare', tag:'Measure the unknown against the known.',
+   body:['Often you don’t know a number, but you know a <b>comparison</b>: “about as big as …”, “roughly a fifth of …”. People estimate ratios far more reliably than absolute values.',
+         'Pick a reference you know and just ask: how much bigger or smaller is the thing I want? This works equally well for areas, heights, populations and amounts of money.'],
+   ex:['<b>Question:</b> What is the area of Bavaria?','Reference: Germany is about 357,000 km².','Bavaria is the largest German state, about a fifth of the map.','357,000 ÷ 5 ≈ 71,000 km². <b>Answer:</b> 70,550 km².'],
+   sol:'Reference: Bavaria at about 70,000 km². On the map Austria is a little larger than Bavaria – roughly 20 % more. That gives about 84,000 km². The answer is 83,879 km².'}},
+ {id:'units', icon:'🔍', q:'Wie viele Badewannen (150 l) füllt ein olympisches Schwimmbecken (2.500 m³)?',
+  de:{title:'Einheiten prüfen', tag:'Die häufigste Fehlerquelle – und wie man sie vermeidet.',
+   body:['Viele grobe Fehler entstehen nicht durch falsches Wissen, sondern durch <b>Einheiten</b>: Meter statt Kilometer, m² statt km², Liter statt Kubikmeter. Ein Quadratkilometer sind eine Million Quadratmeter, ein Kubikmeter sind 1.000 Liter.',
+         'Prüfe am Ende kurz: Passt die Einheit zur Frage? Und ist das Ergebnis <b>plausibel</b>, wenn du es mit etwas Bekanntem vergleichst?'],
+   ex:['<b>Frage:</b> Wie viele Liter Wasser fasst ein olympisches Becken (50 × 25 × 2 m)?','50 × 25 × 2 = 2.500 – aber das sind Kubikmeter, keine Liter!','1 m³ = 1.000 Liter, also 2.500 × 1.000 = 2,5 Millionen Liter.','Wer bei 2.500 aufhört, liegt um Faktor 1.000 daneben.'],
+   sol:'Erst umrechnen: 2.500 m³ sind 2,5 Millionen Liter. Geteilt durch 150 Liter pro Wanne ergibt das rund 16.700 Badewannen. Ohne Umrechnung käme man auf 17 – Faktor 1.000 daneben.'},
+  en:{title:'Check your units', tag:'The most common source of error – and how to avoid it.',
+   body:['Many big mistakes come not from wrong knowledge but from <b>units</b>: metres instead of kilometres, m² instead of km², litres instead of cubic metres. One square kilometre is a million square metres; one cubic metre is 1,000 litres.',
+         'At the end, check briefly: does the unit fit the question? And is the result <b>plausible</b> when you compare it with something familiar?'],
+   ex:['<b>Question:</b> How many litres of water does an Olympic pool (50 × 25 × 2 m) hold?','50 × 25 × 2 = 2,500 – but that is cubic metres, not litres!','1 m³ = 1,000 litres, so 2,500 × 1,000 = 2.5 million litres.','Stopping at 2,500 leaves you off by a factor of 1,000.'],
+   sol:'Convert first: 2,500 m³ is 2.5 million litres. Divided by 150 litres per tub, that is about 16,700 bathtubs. Without converting you would get 17 – off by a factor of 1,000.'}},
+];
+const LESSON_Q = LESSONS.map(l => (Q.find(q => q.de.text === l.q) || {}).id);
+let learnSel = null;
+function showLearn(sel){
+  if(sel !== undefined) learnSel = sel;
+  const done = store.get('lessons', {});
+  if(learnSel == null){
+    $('learnH').textContent = t('learnTitle');
+    $('learnBody').innerHTML = `<p class="lead">${t('learnLead')}</p><div class="lessons">` + LESSONS.map((l, i) => {
+      const x = l[settings.lang], d = done[l.id];
+      return `<button class="lcard" data-l="${i}"><span class="ln">${l.icon}</span><span><b>${i+1}. ${x.title}</b><small>${x.tag}</small></span>` +
+        `<span class="ld" style="color:${d != null ? color(d) : 'var(--muted)'}">${d != null ? '✓ ' + d : '›'}</span></button>`;
+    }).join('') + '</div>';
+    $('learnBody').querySelectorAll('.lcard').forEach(b => b.onclick = () => { showLearn(+b.dataset.l); scrollTo(0, 0); });
+  } else {
+    const l = LESSONS[learnSel], x = l[settings.lang], q = Q[LESSON_Q[learnSel]], unit = L(q).unit;
+    $('learnH').textContent = `${learnSel+1}. ${x.title}`;
+    $('learnBody').innerHTML = `<button class="back" id="lBack">← ${t('allLessons')}</button><div class="lesson">` +
+      x.body.map(p => `<p>${p}</p>`).join('') +
+      `<div class="lbox ex"><div class="lb-t">${t('example')}</div><ol>${x.ex.map(e => `<li>${e}</li>`).join('')}</ol></div>` +
+      `<div class="lbox pr"><div class="lb-t">${t('practice')}</div><p class="lq">${L(q).text}</p>` +
+      (l.bounds ? `<div class="bounds"><div class="inputwrap small"><input id="lLo" inputmode="decimal" placeholder="${t('tooLowPh')}"></div>` +
+        `<div class="inputwrap small"><input id="lHi" inputmode="decimal" placeholder="${t('tooHighPh')}"></div></div>` +
+        `<div class="gm"><span id="lGm">${t('gmHint')}</span><button type="button" id="lGmUse" disabled>${t('gmUse')}</button></div>` : '') +
+      `<form id="lForm" autocomplete="off"><div class="inputwrap" style="margin-top:8px"><input id="lGuess" inputmode="decimal" placeholder="${t('placeholder')}"><span>${unit}</span></div>` +
+      `<div class="preview" id="lPrev">&nbsp;</div><button class="btn" type="submit">${t('check')}</button></form><div id="lRes" class="lres"></div></div></div>`;
+    $('lBack').onclick = () => showLearn(null);
+    const prev = () => {
+      const v = parseNum($('lGuess').value), pv = $('lPrev'); pv.classList.remove('err');
+      if(v === null) pv.innerHTML = '&nbsp;';
+      else if(!(v > 0)){ pv.textContent = t('errPos'); pv.classList.add('err'); }
+      else pv.textContent = '= ' + fmt(v) + ' ' + unit;
+    };
+    $('lGuess').oninput = prev;
+    if(l.bounds){
+      let gm = null;
+      const upd = () => {
+        const lo = parseNum($('lLo').value), hi = parseNum($('lHi').value);
+        gm = lo > 0 && hi > 0 ? Math.sqrt(lo * hi) : null;
+        $('lGm').textContent = gm ? `${t('gmRes')}: ${gm >= 1e6 ? fmt(gm) : nf(3).format(gm)}` : t('gmHint');
+        $('lGmUse').disabled = !gm;
+      };
+      $('lLo').oninput = upd; $('lHi').oninput = upd;
+      $('lGmUse').onclick = () => { if(gm){ $('lGuess').value = nf(3).format(gm); prev(); } };
+    }
+    $('lForm').onsubmit = e => {
+      e.preventDefault();
+      const v = parseNum($('lGuess').value);
+      if(!(v > 0)){ prev(); $('lPrev').classList.add('err'); if(v === null) $('lPrev').textContent = t('errEmpty'); return; }
+      const r = score(v, q.answer), d = store.get('lessons', {});
+      d[l.id] = Math.max(d[l.id] ?? 0, r.pts); store.set('lessons', d);
+      const last = learnSel === LESSONS.length - 1;
+      $('lRes').innerHTML = `<div class="result"><div class="points" style="color:${color(r.pts)}">+${r.pts}</div><div class="verdict">${verdict(r)}</div></div>` +
+        `<div class="cmp"><div><small>${t('yourGuess')}</small><strong>${fmt(v)} ${unit}</strong></div><div><small>${t('correct')}</small><strong>${fmt(q.answer)} ${unit}</strong></div></div>` +
+        `<div class="sol"><b>${t('howTo')}</b> ${x.sol}</div>` +
+        `<div class="stack"><button class="btn" id="lNext">${last ? t('toOverview') : t('nextLesson')}</button><button class="btn2" id="lAgain">${t('tryAgain')}</button></div>`;
+      $('lForm').classList.add('hidden');
+      $('lNext').onclick = () => { showLearn(last ? null : learnSel + 1); scrollTo(0, 0); };
+      $('lAgain').onclick = () => showLearn(learnSel);
+      $('lRes').scrollIntoView({behavior: 'smooth', block: 'start'});
+      checkAch();
+    };
+  }
+  show('vLearn'); setTab('learn');
+}
+
+/* ── Errungenschaften ── */
+const PROG0 = {clutch:0, early:0, pow10:0, mastered:0, good:0, bestGood:0, hit:0, bestHit:0, perfect:0, bestStreak:0, longestEndless:0, bestGame:0, wild:0, huge:0, owl:0, blitzGames:0, blitzBest:0, blitzClean:0, quick:0, buzzer:0, langs:{}};
+function loadProg(){ const p = store.get('prog', PROG0); for(const k in PROG0) if(k !== 'langs') p[k] = fin(p[k]); p.langs = p.langs || {}; return p; }
+const saveProg = p => store.set('prog', p);
+function trackAnswer(v, r){
+  const p = loadProg();
+  p.good = r.pts >= 80 ? p.good + 1 : 0; p.bestGood = Math.max(p.bestGood, p.good);
+  p.hit = r.factor < 1.05 ? p.hit + 1 : 0; p.bestHit = Math.max(p.bestHit, p.hit);
+  if(r.factor >= 100) p.wild = 1;
+  if(v >= 1e18) p.huge = 1;
+  const hr = new Date().getHours();
+  if(hr < 4) p.owl = 1;
+  if(hr >= 5 && hr < 7) p.early = 1;
+  const l10 = Math.round(Math.log10(v));
+  if(r.pts >= 80 && Math.abs(v - 10 ** l10) < 1e-9 * v) p.pow10 = 1;
+  if(game.mode === 'survival' && game.lives === 1 && r.pts >= LIFE_THRESHOLD){ game.clutch = (game.clutch || 0) + 1; p.clutch = Math.max(p.clutch, game.clutch); }
+  p.langs[settings.lang] = 1;
+  const sc = game.last && game.last.secs;
+  if(sc != null){
+    if(r.pts >= 80 && sc < 3) p.quick = 1;
+    if(r.pts >= 70 && !game.last.auto && settings.blitzSec - sc < 1) p.buzzer = 1;
+  }
+  if(game.mode === 'endless') p.longestEndless = Math.max(p.longestEndless, game.results.length);
+  p.bestGame = Math.max(p.bestGame, total());
+  saveProg(p);
+}
+function seenInfo(){
+  const ids = new Set();
+  store.get('log', []).forEach(x => { if(x.i != null) ids.add(x.i); });
+  Object.values(store.get('daily', {})).forEach(rs => (rs || []).forEach(r => ids.add(r.id)));
+  return {distinct: ids.size, completeCats: cats.filter(c => Q.every(q => q.cat !== c || ids.has(q.id))).length};
+}
+function achCtx(){
+  const cs = store.get('cats', {}), st = loadStats(), en = store.get('endless', {best:0, bestN:0}), p = loadProg();
+  const per = cats.map(c => cs[c]).filter(Boolean);
+  return {
+    answers: per.reduce((a,c)=>a+c.n,0), hits: per.reduce((a,c)=>a+c.hits,0),
+    catsPlayed: per.filter(c => c.n > 0).length,
+    anchors: Object.keys(store.get('anchors', {})).length,
+    masterN: per.filter(c => c.n >= 10 && c.sum/c.n >= 70).length,
+    lessons: Object.keys(store.get('lessons', {})).length,
+    ...seenInfo(),
+    master: per.some(c => c.n >= 10 && c.sum/c.n >= 70) ? 1 : 0,
+    allround: per.filter(c => c.n >= 5 && c.sum/c.n >= 50).length,
+    daily: Object.keys(store.get('daily', {})).length,
+    streak: Math.max(p.bestStreak, st.streak), games: st.games, survN: fin(en.bestN), p
+  };
+}
+// [id, Icon, Ziel, Wert(ctx), [Name DE, Beschreibung DE], [Name EN, Beschreibung EN]]
+const ACH = [
+  ['first','👣',1,c=>c.answers,['Erste Schätzung','Beantworte deine erste Frage.'],['First guess','Answer your first question.']],
+  ['run3','🔥',3,c=>c.p.bestGood,['Warmgelaufen','3 Schätzungen hintereinander mit mindestens 80 Punkten.'],['Warmed up','3 estimates in a row scoring 80+ points.']],
+  ['run5','⚡',5,c=>c.p.bestGood,['In Fahrt','5 Schätzungen hintereinander mit mindestens 80 Punkten.'],['On a roll','5 estimates in a row scoring 80+ points.']],
+  ['run10','🚀',10,c=>c.p.bestGood,['Unaufhaltsam','10 Schätzungen hintereinander mit mindestens 80 Punkten.'],['Unstoppable','10 estimates in a row scoring 80+ points.']],
+  ['bull1','🎯',1,c=>c.hits,['Volltreffer','Liege weniger als 5 % neben der richtigen Antwort.'],['Bullseye','Get within 5 % of the correct answer.']],
+  ['bull2','✌️',2,c=>c.p.bestHit,['Doppelschlag','2 Volltreffer hintereinander.'],['Double tap','2 bullseyes in a row.']],
+  ['bull10','🏹',10,c=>c.hits,['Scharfschütze','Sammle 10 Volltreffer.'],['Sharpshooter','Collect 10 bullseyes.']],
+  ['perfect','💎',1,c=>c.p.perfect,['Makellos','Eine Runde mit mind. 5 Fragen, jede Antwort mit 75+ Punkten.'],['Flawless','A round of 5+ questions with every answer scoring 75+.']],
+  ['pts1000','💯',1000,c=>c.p.bestGame,['Tausender','Erreiche 1.000 Punkte in einem einzigen Spiel.'],['Grand','Score 1,000 points in a single game.']],
+  ['ans100','📚',100,c=>c.answers,['Vielschätzer','Beantworte 100 Fragen.'],['Estimator','Answer 100 questions.']],
+  ['ans500','🧠',500,c=>c.answers,['Schätzmaschine','Beantworte 500 Fragen.'],['Estimating machine','Answer 500 questions.']],
+  ['ans1000','🏛️',1000,c=>c.answers,['Lebenswerk','Beantworte 1.000 Fragen.'],['Life\'s work','Answer 1,000 questions.']],
+  ['games50','🎮',50,c=>c.games,['Stammgast','Spiele 50 Spiele.'],['Regular','Play 50 games.']],
+  ['allcats','🧭',11,c=>c.catsPlayed,['Weltenbummler','Beantworte Fragen aus allen 11 Kategorien.'],['Globetrotter','Answer questions from all 11 categories.']],
+  ['master','🎓',1,c=>c.master,['Fachgebiet','Ø 70+ Punkte in einer Kategorie (mind. 10 Antworten).'],['Specialist','Average 70+ in one category (at least 10 answers).']],
+  ['allround','🌐',11,c=>c.allround,['Allrounder','Ø 50+ Punkte in allen Kategorien (je mind. 5 Antworten).'],['All-rounder','Average 50+ in every category (5+ answers each).']],
+  ['daily1','📅',1,c=>c.daily,['Tagesform','Löse ein Tagesrätsel.'],['Daily dose','Complete a daily puzzle.']],
+  ['streak7','🗓️',7,c=>c.streak,['Eine Woche dabei','7 Tagesrätsel an 7 Tagen in Folge.'],['One week in','Daily puzzles on 7 days in a row.']],
+  ['streak30','🏅',30,c=>c.streak,['Monatsmarathon','30 Tagesrätsel an 30 Tagen in Folge.'],['Month marathon','Daily puzzles on 30 days in a row.']],
+  ['surv10','❤️',10,c=>c.survN,['Überlebenskünstler','Überstehe 10 Fragen im Überlebensmodus.'],['Survivor','Last 10 questions in survival mode.']],
+  ['surv25','🛡️',25,c=>c.survN,['Unverwüstlich','Überstehe 25 Fragen im Überlebensmodus.'],['Indestructible','Last 25 questions in survival mode.']],
+  ['endless50','♾️',50,c=>c.p.longestEndless,['Dauerläufer','Beantworte 50 Fragen in einer Endlos-Sitzung.'],['Long haul','Answer 50 questions in one endless session.']],
+  ['wild','🙈',1,c=>c.p.wild,['Daneben ist auch vorbei','Liege mehr als Faktor 100 daneben.'],['Not even close','Miss by a factor of 100 or more.']],
+  ['huge','🌌',1,c=>c.p.huge,['Astronomisch','Gib eine Schätzung von mindestens einer Trillion (10¹⁸) ab.'],['Astronomical','Submit an estimate of at least 10¹⁸.']],
+  ['polyglot','🗣️',2,c=>Object.keys(c.p.langs).length,['Polyglott','Spiele auf Deutsch und auf Englisch.'],['Polyglot','Play in both German and English.']],
+  ['review10','🔁',10,c=>c.p.mastered,['Aus Fehlern lernen','Meistere 10 Karten aus deinem Fehler-Stapel.'],['Learning from mistakes','Master 10 cards from your mistakes deck.']],
+  ['anchor10','📌',10,c=>c.anchors,['Gedächtniskünstler','Schalte 10 Merkzahlen frei.'],['Memory artist','Unlock 10 anchor numbers.']],
+  ['anchorAll','🗃️',ANCH.length,c=>c.anchors,['Wandelndes Lexikon','Schalte alle Merkzahlen frei.'],['Walking almanac','Unlock every anchor number.']],
+  ['run15','🌟',15,c=>c.p.bestGood,['Legendär','15 Schätzungen hintereinander mit mindestens 80 Punkten.'],['Legendary','15 estimates in a row scoring 80+ points.']],
+  ['bull3','🎰',3,c=>c.p.bestHit,['Hattrick','3 Volltreffer hintereinander.'],['Hat-trick','3 bullseyes in a row.']],
+  ['bull25','🎖️',25,c=>c.hits,['Meisterschütze','Sammle 25 Volltreffer.'],['Marksman','Collect 25 bullseyes.']],
+  ['perfect5','💠',5,c=>c.p.perfect,['Serienperfektion','Spiele 5 makellose Runden.'],['Serial perfectionist','Play 5 flawless rounds.']],
+  ['pts2500','🏆',2500,c=>c.p.bestGame,['Punktejäger','Erreiche 2.500 Punkte in einem einzigen Spiel.'],['Point hunter','Score 2,500 points in a single game.']],
+  ['ans2500','🌋',2500,c=>c.answers,['Unermüdlich','Beantworte 2.500 Fragen.'],['Tireless','Answer 2,500 questions.']],
+  ['games200','🏟️',200,c=>c.games,['Gehört zum Inventar','Spiele 200 Spiele.'],['Part of the furniture','Play 200 games.']],
+  ['seen250','🔭',250,c=>c.distinct,['Entdecker','Beantworte 250 verschiedene Fragen.'],['Explorer','Answer 250 different questions.']],
+  ['complete1','📗',1,c=>c.completeCats,['Kapitel abgeschlossen','Beantworte jede Frage einer Kategorie mindestens einmal.'],['Chapter complete','Answer every question in one category at least once.']],
+  ['master3','📜',3,c=>c.masterN,['Universalgelehrter','Ø 70+ Punkte in 3 Kategorien (je mind. 10 Antworten).'],['Polymath','Average 70+ in 3 categories (10+ answers each).']],
+  ['allstar','🔮',11,c=>c.masterN,['Allwissend','Ø 70+ Punkte in allen Kategorien (je mind. 10 Antworten).'],['Omniscient','Average 70+ in every category (10+ answers each).']],
+  ['streak100','👑',100,c=>c.streak,['Hundert Tage','Tagesrätsel an 100 Tagen in Folge.'],['Hundred days','Daily puzzles on 100 days in a row.']],
+  ['surv50','🧟',50,c=>c.survN,['Nicht totzukriegen','Überstehe 50 Fragen im Überlebensmodus.'],['Unkillable','Last 50 questions in survival mode.']],
+  ['clutch','🫀',5,c=>c.p.clutch,['Mit letzter Kraft','Überstehe 5 Fragen mit nur noch einem Leben.'],['Last gasp','Survive 5 questions on your final life.']],
+  ['endless150','🛰️',150,c=>c.p.longestEndless,['Ultramarathon','Beantworte 150 Fragen in einer Endlos-Sitzung.'],['Ultramarathon','Answer 150 questions in one endless session.']],
+  ['review50','🧹',50,c=>c.p.mastered,['Reiner Tisch','Meistere 50 Karten aus deinem Fehler-Stapel.'],['Clean slate','Master 50 cards from your mistakes deck.']],
+  ['pow10','🔟',1,c=>c.p.pow10,['Größenordnungsdenker','Gib eine glatte Zehnerpotenz ein (z. B. 1.000) und hol damit 80+ Punkte.'],['Order-of-magnitude thinker','Enter an exact power of ten (e.g. 1,000) and score 80+ with it.']],
+  ['early','🌅',1,c=>c.p.early,['Frühaufsteher','Beantworte eine Frage zwischen 5 und 7 Uhr.'],['Early bird','Answer a question between 5 and 7 am.']],
+  ['lessons','📖',6,c=>c.lessons,['Musterschüler','Schließe alle 6 Lektionen im Lern-Tab ab.'],['Star pupil','Complete all 6 lessons in the Learn tab.']],
+  ['blitz1','⏱️',1,c=>c.p.blitzGames,['Gegen die Uhr','Spiele eine komplette Runde im Blitzmodus.'],['Against the clock','Finish a full round in blitz mode.']],
+  ['blitz10','🔋',10,c=>c.p.blitzGames,['Blitzableiter','Spiele 10 komplette Runden im Blitzmodus.'],['Lightning rod','Finish 10 full rounds in blitz mode.']],
+  ['blitz600','🌩️',600,c=>c.p.blitzBest,['Blitzgescheit','Erreiche 600 Punkte in einer Blitzrunde.'],['Quick-witted','Score 600 points in one blitz round.']],
+  ['blitz800','⛈️',800,c=>c.p.blitzBest,['Donnerwetter','Erreiche 800 Punkte in einer Blitzrunde.'],['Thunderstruck','Score 800 points in one blitz round.']],
+  ['blitzClean','🧊',1,c=>c.p.blitzClean,['Kühler Kopf','Beantworte in einer Blitzrunde alle Fragen rechtzeitig.'],['Cool head','Answer every question of a blitz round in time.']],
+  ['quick','🐆',1,c=>c.p.quick,['Schnellschuss','Hol 80+ Punkte in weniger als 3 Sekunden.'],['Quick draw','Score 80+ points in under 3 seconds.']],
+  ['buzzer','🔔',1,c=>c.p.buzzer,['In letzter Sekunde','Hol 70+ Punkte in der letzten Sekunde vor Zeitablauf.'],['Buzzer beater','Score 70+ points in the final second before time runs out.']],
+  ['owl','🦉',1,c=>c.p.owl,['Nachteule','Beantworte eine Frage zwischen Mitternacht und 4 Uhr.'],['Night owl','Answer a question between midnight and 4 am.']],
+];
+const achText = a => settings.lang === 'en' ? a[5] : a[4];
+let toastQ = [], toastBusy = false;
+function checkAch(silent){
+  const got = store.get('ach', {}), c = achCtx(), newly = [];
+  ACH.forEach(a => { if(!got[a[0]] && a[3](c) >= a[2]){ got[a[0]] = Date.now(); newly.push(a); } });
+  if(!newly.length) return;
+  store.set('ach', got);
+  if(!silent){ toastQ.push(...newly.map(a => ({i: a[1], n: achText(a)[0], l: t('achNew'), view: 'ach'}))); nextToast(); }
+}
+function nextToast(){
+  if(toastBusy || !toastQ.length) return;
+  const el = $('toast'); toastBusy = true;
+  let view;
+  if(toastQ.length >= 3){
+    const all = toastQ.splice(0); view = all[0].view;
+    el.innerHTML = `<span class="ti">🏆</span><span><small>${t('achMany', all.length)}</small><b>${all.map(x => x.i).join(' ')}</b></span>`;
+  } else {
+    const x = toastQ.shift(); view = x.view;
+    el.innerHTML = `<span class="ti">${x.i}</span><span><small>${x.l}</small><b>${x.n}</b></span>`;
+  }
+  el.onclick = () => { el.classList.remove('on'); showAch(view); };
+  requestAnimationFrame(() => el.classList.add('on'));
+  setTimeout(() => { el.classList.remove('on'); setTimeout(() => { toastBusy = false; nextToast(); }, 450); }, 2800);
+}
+function achHtml(){
+  const got = store.get('ach', {}), c = achCtx();
+  const fmtD = ts => new Date(ts).toLocaleDateString(t('locale'), {day:'numeric', month:'short', year:'numeric'});
+  const list = ACH.map(a => ({a, ts: got[a[0]], v: Math.min(a[2], a[3](c))}))
+    .sort((x,y) => (!!y.ts - !!x.ts) || (x.ts && y.ts ? y.ts - x.ts : y.v/y.a[2] - x.v/x.a[2]));
+  const u = list.filter(x => x.ts).length;
+  return `<div class="achsum"><p class="lead" style="margin:0">${t('achLead', u, ACH.length)}</p>
+      <div class="meter"><i style="width:${u/ACH.length*100}%;background:var(--accent)"></i></div></div>
+    <div class="achgrid">${list.map(({a, ts, v}) => {
+      const [name, desc] = achText(a);
+      return `<div class="ach ${ts ? 'got' : 'locked'}"><span class="ai">${a[1]}</span><b>${name}</b><p>${desc}</p>` +
+        (ts ? `<small>${t('achOn', fmtD(ts))}</small>`
+            : a[2] > 1 ? `<small>${nf(6).format(v)} / ${nf(6).format(a[2])}</small><div class="meter"><i style="width:${v/a[2]*100}%;background:var(--accent)"></i></div>` : '') + '</div>';
+    }).join('')}</div>`;
+}
+let achView = 'ach';
+function showAch(view){
+  if(view) achView = view;
+  $('achH').textContent = t('tabAch');
+  const seg = `<div class="seg" style="margin-bottom:16px">` +
+    [['ach', t('achTitle')], ['anchors', t('anchTitle')]].map(([v,l]) => `<button type="button" data-v="${v}" class="${achView===v?'on':''}">${l}</button>`).join('') + '</div>';
+  $('achBody').innerHTML = seg + (achView === 'ach' ? achHtml() : anchorsHtml());
+  $('achBody').querySelectorAll('.seg button').forEach(b => b.onclick = () => showAch(b.dataset.v));
+  show('vAch'); setTab('ach');
+}
+function anchorsHtml(){
+  const got = store.get('anchors', {}), u = ANCH.filter(a => got[a[0]]).length, en = settings.lang === 'en';
+  return `<div class="achsum"><p class="lead" style="margin:0 0 4px">${t('anchLead', u, ANCH.length)}</p>
+      <div class="meter"><i style="width:${u/ANCH.length*100}%;background:var(--accent)"></i></div></div>
+    <p class="note">${t('anchIntro')}</p>` +
+    ANCH.map((a, i) => {
+      const [key, icon, val, ude, uen, nde, nen, tde, ten] = a, name = en ? nen : nde;
+      if(got[key]) return `<div class="anc got"><span class="ai">${icon}</span><div><small>${name}</small><div class="av">${fmt(val)} ${en ? uen : ude}</div><p>${en ? ten : tde}</p></div></div>`;
+      const q = Q[ANCH_IDS[i][0]];
+      return `<div class="anc locked"><span class="ai">${icon}</span><div><small>${name}</small><div class="av">🔒 ???</div><p>${t('anchLocked', L(q).text)}</p></div></div>`;
+    }).join('');
+}
+
+/* ── Einstellungen ── */
+function seg(key, opts){
+  return `<div class="seg" data-key="${key}">${opts.map(([v,l]) =>
+    `<button type="button" data-v="${v}" class="${String(settings[key])===String(v)?'on':''}">${l}</button>`).join('')}</div>`;
+}
+function showSettings(){
+  $('settingsBody').innerHTML = `
+    <div class="setting"><label>${t('language')}</label>${seg('lang', [['de','Deutsch'],['en','English']])}</div>
+    <div class="setting"><label>${t('theme')}</label>${seg('theme', [['system',t('themeSys')],['light',t('themeLight')],['dark',t('themeDark')]])}</div>
+    <div class="setting"><label>${t('roundLen')}</label>${seg('roundLen', [[5,'5'],[10,'10'],[15,'15'],[20,'20']])}</div>
+    <div class="setting"><label>${t('blitzSec')}</label>${seg('blitzSec', [[10,'10 s'],[15,'15 s'],[20,'20 s'],[30,'30 s']])}</div>
+    <div class="setting"><label>${t('data')}</label>
+      <div class="stack">
+        <button class="btn2" id="bExport">${t('csvExport')}</button>
+        <button class="btn2" id="bImport">${t('csvImport')}</button>
+        <input type="file" id="fImport" accept=".csv,text/csv,text/plain" class="hidden">
+        <p class="note" id="dataMsg" role="status" style="margin:0">${t('csvHint')}</p>
+        <button class="btn2" id="bReset">${t('reset')}</button>
+      </div></div>
+    <div class="setting"><label>${t('about')}</label><p class="about">${t('aboutText', Q.length)}</p></div>`;
+  $('settingsBody').querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+    const key = b.closest('.seg').dataset.key;
+    settings[key] = key === 'roundLen' || key === 'blitzSec' ? Number(b.dataset.v) : b.dataset.v;
+    saveSettings();
+    if(key === 'lang') applyLang();
+    if(key === 'theme') applyTheme();
+    showSettings();
+  });
+  $('bReset').onclick = resetStats;
+  $('bExport').onclick = exportCsv;
+  $('bImport').onclick = () => $('fImport').click();
+  $('fImport').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if(f) importCsv(f); };
+  show('vSettings'); setTab('settings');
+}
+/* ── CSV-Export / -Import ── */
+const BACKUP_FORMAT = 'schaetzmeister-1';
+const BACKUP_KEYS = {settings:'o', stats:'o', cats:'o', log:'a', daily:'o', dailyProg:'o', active:'o', seen:'a', endless:'o', blitz:'o',
+  rev:'o', anchors:'o', ach:'o', prog:'o', lessons:'o', logInit:'b', revInit:'b', catSel:'a'};
+const csvCell = v => '"' + String(v).replace(/"/g, '""') + '"';
+function parseCsv(text){
+  const rows = []; let row = [], cell = '', q = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(q){
+      if(c === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if(c === '"') q = true;
+    else if(c === ','){ row.push(cell); cell = ''; }
+    else if(c === '\n' || c === '\r'){
+      if(c === '\r' && text[i+1] === '\n') i++;
+      row.push(cell); cell = ''; if(row.some(x => x !== '')) rows.push(row); row = [];
+    } else cell += c;
+  }
+  row.push(cell); if(row.some(x => x !== '')) rows.push(row);
+  return rows;
+}
+function exportCsv(){
+  const rows = [['key','value'], ['format', BACKUP_FORMAT], ['exported', new Date().toISOString()]];
+  for(const k in BACKUP_KEYS){ let raw = null; try{ raw = localStorage.getItem('sm_'+k); }catch(e){} if(raw !== null && raw !== 'null') rows.push([k, raw]); }
+  const csv = '\ufeff' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `schaetzmeister-${today()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  $('dataMsg').textContent = t('csvExported', rows.length - 3);
+}
+async function importCsv(file){
+  const msg = $('dataMsg'), bad = () => { msg.textContent = t('csvBad'); };
+  let rows;
+  try{ rows = parseCsv((await file.text()).replace(/^\ufeff/, '')); }catch(e){ return bad(); }
+  if(!rows.length || rows[0][0] !== 'key' || rows[0][1] !== 'value') return bad();
+  const fmt = rows.find(r => r[0] === 'format');
+  if(!fmt || fmt[1] !== BACKUP_FORMAT) return bad();
+  const data = {};
+  for(const [k, v] of rows.slice(1)){
+    const kind = BACKUP_KEYS[k]; if(!kind || v === undefined) continue;
+    let x; try{ x = JSON.parse(v); }catch(e){ return bad(); }
+    if(x === null) continue;
+    const ok = kind === 'a' ? Array.isArray(x) : kind === 'b' ? typeof x === 'boolean' : (x && typeof x === 'object' && !Array.isArray(x));
+    if(!ok) return bad();
+    data[k] = v;
+  }
+  const n = Object.keys(data).length;
+  if(!n) return bad();
+  if(!confirm(t('csvConfirm', n))) return;
+  try{
+    for(const k in BACKUP_KEYS) localStorage.removeItem('sm_'+k);
+    for(const k in data) localStorage.setItem('sm_'+k, data[k]);
+  }catch(e){ return bad(); }
+  msg.textContent = t('csvImported');
+  setTimeout(() => location.reload(), 600);
+}
+function resetStats(){
+  const b = $('bReset');
+  if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = t('resetConfirm'); return; }
+  for(const k of ['cats','daily','seen','endless','blitz','log','active','dailyProg','ach','prog','rev','anchors','lessons']) store.set(k, (k==='seen'||k==='log') ? [] : null);
+  store.set('stats', Object.assign({}, STATS0));
+  game = null;
+  b.dataset.armed = ''; b.textContent = t('resetDone');
+}
+function applyTheme(){
+  if(settings.theme === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = settings.theme;
+}
+function applyLang(){
+  document.documentElement.lang = settings.lang;
+  document.title = t('name');
+  $('brand').innerHTML = t('brand');
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  renderCats();
+}
+function renderCats(){
+  const all = catSel.size >= cats.length, none = catSel.size === 0;
+  $('catSum').textContent = all ? t('allCats', Q.length) : none ? t('catsNone') : t('catsSome', catSel.size, cats.length, poolFor().length);
+  ['bRound','bEndless','bSurvival','bBlitz'].forEach(id => $(id).disabled = none);
+  $('catAll').textContent = t('catsAll'); $('catNone').textContent = t('catsOne');
+  $('catList').innerHTML = cats.map(c =>
+    `<label><input type="checkbox" value="${c}"${catSel.has(c) ? ' checked' : ''}><span>${catName(c)} (${Q.filter(q=>q.cat===c).length})</span></label>`).join('');
+  $('catList').querySelectorAll('input').forEach(i => i.onchange = () => {
+    if(i.checked) catSel.add(i.value); else catSel.delete(i.value);
+    saveCatSel(); renderCats();
+  });
+}
+
+/* ── Setup ── */
+$('catAll').onclick = () => { cats.forEach(c => catSel.add(c)); saveCatSel(); renderCats(); };
+$('catNone').onclick = () => { catSel.clear(); saveCatSel(); renderCats(); };
+$('bDaily').onclick = startDaily;
+$('bRound').onclick = startRound;
+$('bEndless').onclick = () => startEndless(false);
+$('bSurvival').onclick = () => startEndless(true);
+$('bReview').onclick = startReview;
+$('bStop').onclick = finish;
+$('bAgain').onclick = () => isOpen() ? startEndless(game.mode === 'survival') : game.mode === 'review' ? (revDeck().length ? startReview() : home()) : game.mode === 'blitz' ? startBlitz() : startRound();
+$('bBlitz').onclick = startBlitz;
+$('bNext').onclick = next;
+$('bQuit').onclick = quit;
+$('bShare').onclick = share;
+$('tiles').onclick = showStats;
+$('logo').onclick = renderPlay;
+$('form').onsubmit = submit;
+$('guess').oninput = updatePreview;
+$('chips').onclick = e => {
+  const b = e.target.closest('button'); if(!b) return;
+  const i = $('guess'), s = b.dataset.s;
+  i.value = i.value.replace(/\s*(tsd|mio|mrd|bio|k|m|bn|tn|e[0-9+\-]*)$/i,'') + (s === 'e' ? 'e' : ' ' + s);
+  i.focus(); updatePreview();
+};
+document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => {
+  const tab = b.dataset.tab;
+  if(tab === 'play') renderPlay(); else if(tab === 'stats') showStats(); else if(tab === 'ach') showAch(); else if(tab === 'learn') showLearn(null); else showSettings();
+});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+applyTheme(); applyLang(); recoverOpenGames(); backfillLog(); backfillRevAnchors(); checkAch(true); home();
+</script>
+</body>
+</html>
