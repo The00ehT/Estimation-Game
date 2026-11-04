@@ -2,7 +2,7 @@
 
 **An estimation game inspired by fermi.gg. Guess numbers you can't possibly know: the closer you get, the more points you score.**
 
-### ▶ [Play now](https://the00eht.github.io/Fermi-Estimation-game/)
+### ▶ [Play now](https://the00eht.github.io/Estimation-Game/)
 
 No download, no account, works in any browser.
 
